@@ -20,22 +20,22 @@ export function LandingPage() {
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const smooth = useSpring(scrollYProgress, { stiffness: 185, damping: 27, mass: .24 });
-  const headlineY = useTransform(smooth, [0, 1], [0, 150]);
-  const modelY = useTransform(smooth, [0, 1], [0, -112]);
-  const ghostY = useTransform(smooth, [0, 1], [0, 240]);
-  const headlineX = useSpring(useTransform(pointerX, [-1, 1], [-9, 9]), { stiffness: 420, damping: 32, mass: .2 });
-  const modelX = useSpring(useTransform(pointerX, [-1, 1], [-16, 16]), { stiffness: 420, damping: 30, mass: .2 });
-  const modelRotateX = useSpring(useTransform(pointerY, [-1, 1], [5.5, -5.5]), { stiffness: 390, damping: 28, mass: .2 });
-  const modelRotateY = useSpring(useTransform(pointerX, [-1, 1], [-6.5, 6.5]), { stiffness: 390, damping: 28, mass: .2 });
-  const accentX = useSpring(useTransform(pointerX, [-1, 1], [-65, 65]), { stiffness: 320, damping: 26, mass: .2 });
-  const accentY = useSpring(useTransform(pointerY, [-1, 1], [-38, 38]), { stiffness: 320, damping: 26, mass: .2 });
+  const smooth = useSpring(scrollYProgress, { stiffness: 320, damping: 24, mass: .15 });
+  const headlineY = useTransform(smooth, [0, 1], [0, 220]);
+  const modelY = useTransform(smooth, [0, 1], [0, -180]);
+  const ghostY = useTransform(smooth, [0, 1], [0, 340]);
+  const headlineX = useSpring(useTransform(pointerX, [-1, 1], [-18, 18]), { stiffness: 620, damping: 27, mass: .12 });
+  const modelX = useSpring(useTransform(pointerX, [-1, 1], [-34, 34]), { stiffness: 620, damping: 25, mass: .12 });
+  const modelRotateX = useSpring(useTransform(pointerY, [-1, 1], [11, -11]), { stiffness: 580, damping: 24, mass: .12 });
+  const modelRotateY = useSpring(useTransform(pointerX, [-1, 1], [-13, 13]), { stiffness: 580, damping: 24, mass: .12 });
+  const accentX = useSpring(useTransform(pointerX, [-1, 1], [-130, 130]), { stiffness: 500, damping: 23, mass: .12 });
+  const accentY = useSpring(useTransform(pointerY, [-1, 1], [-80, 80]), { stiffness: 500, damping: 23, mass: .12 });
 
   const trackPointer = (event: React.PointerEvent<HTMLElement>) => {
     if (reduceMotion || event.pointerType === "touch") return;
     const bounds = event.currentTarget.getBoundingClientRect();
-    pointerX.set(((event.clientX - bounds.left) / bounds.width - .5) * 2);
-    pointerY.set(((event.clientY - bounds.top) / bounds.height - .5) * 2);
+    pointerX.set(((event.clientX - bounds.left) / bounds.width - .5) * 2.4);
+    pointerY.set(((event.clientY - bounds.top) / bounds.height - .5) * 2.4);
   };
 
   const resetPointer = () => {
@@ -70,7 +70,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <div className="overflow-hidden border-y border-forest-950/10 bg-[#e5e9a4] py-4"><motion.div className="flex w-max gap-10 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-[.16em] text-forest-800" animate={{ x: [0, -790] }} transition={{ repeat: Infinity, duration: 14, ease: "linear" }}>{Array.from({ length: 3 }).flatMap(() => ["Scan & grade", "List live", "Lock escrow", "Verify delivery", "Pay farmer", "Match shelf life"]).map((item, index) => <span key={`${item}-${index}`} className="inline-flex items-center gap-10">{item}<i className="size-1.5 rounded-full bg-leaf-500" /></span>)}</motion.div></div>
+      <div className="overflow-hidden border-y border-forest-950/10 bg-[#e5e9a4] py-4"><motion.div className="flex w-max gap-10 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-[.16em] text-forest-800" animate={{ x: [0, -790] }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }}>{Array.from({ length: 3 }).flatMap(() => ["Scan & grade", "List live", "Lock escrow", "Verify delivery", "Pay farmer", "Match shelf life"]).map((item, index) => <span key={`${item}-${index}`} className="inline-flex items-center gap-10">{item}<i className="size-1.5 rounded-full bg-leaf-500" /></span>)}</motion.div></div>
 
       <div className="site-container py-14 sm:py-16">
         <Reveal className="grid gap-8 border-b border-black/8 pb-10 lg:grid-cols-[.75fr_1.25fr] lg:items-end"><div><span className="eyebrow">The three-minute demo</span><h2 className="mt-3 text-4xl font-black leading-[.96] tracking-[-.065em] sm:text-6xl">One crate.<br /><span className="text-ink-600/40">One complete trade.</span></h2></div><p className="max-w-2xl text-sm leading-[1.8] text-ink-600">YieldGrid menggantikan dua pekerjaan broker kualitas: penilaian dengan rubric grading, dan kepercayaan transaksi dengan escrow. Logistik tetap ada dan selalu ditandai sebagai simulasi di prototype ini.</p></Reveal>
