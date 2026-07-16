@@ -17,7 +17,8 @@ public class HomeController {
                 "running",
                 "/swagger-ui.html",
                 List.of(
-                        "/api/v1/auth/health",
+                        "POST /api/auth/register",
+                        "POST /api/auth/login",
                         "/api/v1/user/health",
                         "/api/v1/farmer/health",
                         "/api/v1/harvest/health",

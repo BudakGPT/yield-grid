@@ -1,14 +1,14 @@
 package budakgpt.yieldgridbackend.modules.user.service.impl;
 
-import budakgpt.yieldgridbackend.modules.user.repository.UserRepository;
+import budakgpt.yieldgridbackend.modules.user.repository.LegacyUserRepository;
 import budakgpt.yieldgridbackend.modules.user.service.UserService;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private final UserRepository userRepository;
+    private final LegacyUserRepository userRepository;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(LegacyUserRepository userRepository) {
         this.userRepository = userRepository;
     }
 }

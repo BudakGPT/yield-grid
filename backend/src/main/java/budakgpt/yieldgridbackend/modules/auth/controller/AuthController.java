@@ -1,22 +1,23 @@
 package budakgpt.yieldgridbackend.modules.auth.controller;
 
-import budakgpt.yieldgridbackend.common.response.ApiResponse;
-import budakgpt.yieldgridbackend.modules.auth.dto.AuthRequest;
 import budakgpt.yieldgridbackend.modules.auth.dto.AuthResponse;
+import budakgpt.yieldgridbackend.modules.auth.dto.LoginRequest;
+import budakgpt.yieldgridbackend.modules.auth.dto.RegisterRequest;
 import budakgpt.yieldgridbackend.modules.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.GetMapping;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/auth")
-@Tag(name = "Auth", description = "Endpoint untuk autentikasi dan manajemen token")
+@RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Authentication and token management")
 public class AuthController {
     private final AuthService authService;
 
@@ -24,20 +25,17 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @Operation(summary = "Health check auth", description = "Memeriksa apakah modul autentikasi sudah siap")
-    @GetMapping("/health")
-    public ApiResponse<String> health() {
-        return ApiResponse.success("Auth module ready");
+    @PostMapping("/register")
+    @Operation(summary = "Register a user", description = "Creates a user account and returns a JWT access token")
+    @SecurityRequirements
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
-    @Operation(
-            summary = "Create auth placeholder",
-            description = "Endpoint placeholder untuk menyiapkan logika autentikasi nanti"
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Request berhasil diproses", content = @Content(schema = @Schema(implementation = AuthResponse.class)))
-    @PostMapping
-    public ApiResponse<AuthResponse> createPlaceholder(@RequestBody AuthRequest request) {
-        AuthResponse response = new AuthResponse("success", "Auth module ready for implementation");
-        return ApiResponse.success("Auth request accepted", response);
+    @PostMapping("/login")
+    @Operation(summary = "Login", description = "Authenticates a user and returns a JWT access token")
+    @SecurityRequirements
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 }
