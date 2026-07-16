@@ -19,12 +19,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
+import budakgpt.yieldgridbackend.modules.auth.enums.Role;
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
 import budakgpt.yieldgridbackend.modules.cart.repository.CartRepository;
 import budakgpt.yieldgridbackend.modules.order.repository.OrderRepository;
@@ -55,6 +58,9 @@ class ProductControllerIntegrationTests {
 
     @Autowired
     private ProductCategoryRepository categoryRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private ProductCategory vegetables;
 
@@ -244,6 +250,19 @@ class ProductControllerIntegrationTests {
     }
 
     private String register(String email, String role) throws Exception {
+        Role parsedRole = Role.valueOf(role);
+        // Public signup only accepts BUYER/SELLER; seed privileged roles directly, then log in.
+        if (parsedRole != Role.BUYER && parsedRole != Role.SELLER) {
+            userRepository.save(UserEntity.builder()
+                    .fullName(role + " User")
+                    .email(email.trim().toLowerCase())
+                    .password(passwordEncoder.encode("password123"))
+                    .role(parsedRole)
+                    .enabled(true)
+                    .emailVerified(false)
+                    .build());
+            return login(email);
+        }
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -255,6 +274,21 @@ class ProductControllerIntegrationTests {
                                 }
                                 """.formatted(role, email, role)))
                 .andExpect(status().isCreated())
+                .andReturn();
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        return json.get("accessToken").asText();
+    }
+
+    private String login(String email) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "password123"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isOk())
                 .andReturn();
         JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
         return json.get("accessToken").asText();
