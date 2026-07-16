@@ -82,7 +82,7 @@ application_yml = '''server:
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/farmledger}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/yieldgrid}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver

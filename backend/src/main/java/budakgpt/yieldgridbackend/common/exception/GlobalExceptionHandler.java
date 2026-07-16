@@ -19,6 +19,10 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import budakgpt.yieldgridbackend.common.response.ErrorResponse;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
 import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsException;
+import budakgpt.yieldgridbackend.modules.cart.exception.CartItemNotFoundException;
+import budakgpt.yieldgridbackend.modules.cart.exception.CartNotFoundException;
+import budakgpt.yieldgridbackend.modules.cart.exception.EmptyCartCheckoutException;
+import budakgpt.yieldgridbackend.modules.cart.exception.UnauthorizedCartAccessException;
 import budakgpt.yieldgridbackend.modules.order.exception.InsufficientStockException;
 import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderRequestException;
 import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderStatusTransitionException;
@@ -124,6 +128,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ProductNotFoundException.class, CategoryNotFoundException.class})
     public ResponseEntity<ErrorResponse> handleProductNotFound(RuntimeException exception, HttpServletRequest request) {
         return error(HttpStatus.NOT_FOUND, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler({CartNotFoundException.class, CartItemNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleCartNotFound(RuntimeException exception, HttpServletRequest request) {
+        return error(HttpStatus.NOT_FOUND, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(UnauthorizedCartAccessException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedCartAccess(
+            UnauthorizedCartAccessException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.FORBIDDEN, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(EmptyCartCheckoutException.class)
+    public ResponseEntity<ErrorResponse> handleEmptyCartCheckout(
+            EmptyCartCheckoutException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
     }
 
     @ExceptionHandler(UnauthorizedProductAccessException.class)

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
+import budakgpt.yieldgridbackend.modules.cart.repository.CartRepository;
 import budakgpt.yieldgridbackend.modules.order.repository.OrderRepository;
 import budakgpt.yieldgridbackend.modules.product.entity.ProductCategory;
 import budakgpt.yieldgridbackend.modules.product.repository.ProductCategoryRepository;
@@ -47,6 +48,9 @@ class ProductControllerIntegrationTests {
     private OrderRepository orderRepository;
 
     @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
@@ -57,6 +61,7 @@ class ProductControllerIntegrationTests {
     @BeforeEach
     void setUp() {
         orderRepository.deleteAll();
+        cartRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
         userRepository.deleteAll();
@@ -189,6 +194,9 @@ class ProductControllerIntegrationTests {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/products']").exists())
+                .andExpect(jsonPath("$.paths['/api/cart']").exists())
+                .andExpect(jsonPath("$.paths['/api/cart/items']").exists())
+                .andExpect(jsonPath("$.paths['/api/cart/checkout']").exists())
                 .andExpect(jsonPath("$.paths['/api/categories']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/analytics/health']").doesNotExist())
                 .andExpect(jsonPath("$.paths['/api/v1/blockchain/health']").doesNotExist())
