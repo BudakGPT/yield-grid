@@ -73,4 +73,10 @@ public class UserEntity {
     private Instant updatedAt;
 
     private Instant lastLoginAt;
+
+    @Column(length = 64)
+    private String stellarPublicKey;
+
+    @Column(length = 1000)
+    private String stellarSecretEnc;
 }

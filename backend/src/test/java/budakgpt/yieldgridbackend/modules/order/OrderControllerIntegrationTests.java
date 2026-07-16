@@ -136,6 +136,33 @@ class OrderControllerIntegrationTests {
     }
 
     @Test
+    void escrowOrderRejectsProductsFromMultipleFarmers() throws Exception {
+        String firstSellerToken = register("seller-first-escrow@example.com", "SELLER");
+        String secondSellerToken = register("seller-second-escrow@example.com", "SELLER");
+        String buyerToken = register("buyer-mixed-escrow@example.com", "BUYER");
+        UUID firstProductId = createProduct(firstSellerToken, "First Farmer Crate", 25, 5);
+        UUID secondProductId = createProduct(secondSellerToken, "Second Farmer Crate", 30, 5);
+
+        mockMvc.perform(post("/api/orders")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(buyerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "items": [
+                                    { "productId": "%s", "quantity": 1 },
+                                    { "productId": "%s", "quantity": 1 }
+                                  ],
+                                  "paymentMethod": "YGIDR_ESCROW",
+                                  "recipientName": "Buyer",
+                                  "recipientPhone": "08123456789",
+                                  "fullAddress": "YieldGrid checkpoint"
+                                }
+                                """.formatted(firstProductId, secondProductId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("YGIDR escrow orders must contain products from one farmer"));
+    }
+
+    @Test
     void insufficientStockIsRejected() throws Exception {
         String sellerToken = register("seller-stock-order@example.com", "SELLER");
         String buyerToken = register("buyer-stock-order@example.com", "BUYER");

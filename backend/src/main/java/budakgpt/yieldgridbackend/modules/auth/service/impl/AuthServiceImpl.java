@@ -13,6 +13,8 @@ import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsExcepti
 import budakgpt.yieldgridbackend.modules.auth.mapper.UserMapper;
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
 import budakgpt.yieldgridbackend.modules.auth.security.JwtService;
+import budakgpt.yieldgridbackend.modules.stellar.SecretCryptoService;
+import budakgpt.yieldgridbackend.modules.stellar.SidecarClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,17 +24,23 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final UserMapper userMapper;
+    private final SidecarClient sidecarClient;
+    private final SecretCryptoService secretCryptoService;
 
     public AuthServiceImpl(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            UserMapper userMapper
+            UserMapper userMapper,
+            SidecarClient sidecarClient,
+            SecretCryptoService secretCryptoService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.userMapper = userMapper;
+        this.sidecarClient = sidecarClient;
+        this.secretCryptoService = secretCryptoService;
     }
 
     @Override
@@ -51,6 +59,15 @@ public class AuthServiceImpl implements AuthService {
                 .enabled(true)
                 .emailVerified(false)
                 .build();
+
+        if (sidecarClient.isEnabled()) {
+            String walletRole = request.role() == budakgpt.yieldgridbackend.modules.auth.enums.Role.BUYER
+                    ? "buyer"
+                    : "farmer";
+            SidecarClient.ProvisionResponse wallet = sidecarClient.provision(walletRole);
+            user.setStellarPublicKey(wallet.publicKey());
+            user.setStellarSecretEnc(secretCryptoService.encrypt(wallet.secret()));
+        }
 
         UserEntity savedUser = userRepository.save(user);
         String token = jwtService.generateToken(savedUser);

@@ -11,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.order.enums.OrderStatus;
+import budakgpt.yieldgridbackend.modules.order.enums.EscrowStatus;
 import budakgpt.yieldgridbackend.modules.order.enums.PaymentMethod;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -125,6 +126,30 @@ public class Order {
     private Instant updatedAt;
 
     private Instant completedAt;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 24)
+    private EscrowStatus escrowStatus = EscrowStatus.NONE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "farmer_seller_id")
+    private UserEntity farmerSeller;
+
+    @Column(length = 128)
+    private String escrowTxHash;
+
+    @Column(length = 128)
+    private String settleTxHash;
+
+    private Integer discountBps;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean breachDetected = false;
+
+    @Column(precision = 8, scale = 2)
+    private BigDecimal lastTemperatureC;
 
     @Builder.Default
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
