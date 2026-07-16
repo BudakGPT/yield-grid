@@ -20,6 +20,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The existing Codex preview is configured on port `4173`.
 
+## Three-minute demo walkthrough
+
+1. Open `/demo` and press **RESET FULL DEMO** before a judging wave.
+2. Use `/farmer` to scan Amara's crate, review its grade mix and shelf-life band, then list it.
+3. Open `/marketplace` as Chef Rosa and lock the direct order in demo escrow.
+4. Start transit from `/demo`, then verify delivery from `/order` to trigger the farmer payout.
+5. Use the breach control as the optional Q&A path for a discounted settlement.
+
 ## Routes
 
 - `/` — mission-first landing page and 3D grade card
