@@ -24,12 +24,7 @@ public class HomeController {
                         "GET /api/categories",
                         "POST /api/orders",
                         "GET /api/orders/my",
-                        "GET /api/orders/seller",
-                        "/api/v1/user/health",
-                        "/api/v1/farmer/health",
-                        "/api/v1/harvest/health",
-                        "/api/v1/order/health",
-                        "/api/v1/marketplace/health"
+                        "GET /api/orders/seller"
                 )
         );
         return ApiResponse.success("YieldGrid backend is running", response);

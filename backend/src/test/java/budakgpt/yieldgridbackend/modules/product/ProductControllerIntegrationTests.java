@@ -189,7 +189,16 @@ class ProductControllerIntegrationTests {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/products']").exists())
-                .andExpect(jsonPath("$.paths['/api/categories']").exists());
+                .andExpect(jsonPath("$.paths['/api/categories']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/analytics/health']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/blockchain/health']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/farmer/health']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/harvest/health']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/inspection/health']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/marketplace/health']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/notification/health']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/shipment/health']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/user/health']").doesNotExist());
     }
 
     private UUID createProduct(String token, String name, int price, int stock) throws Exception {

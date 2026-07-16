@@ -147,16 +147,15 @@ class AuthControllerIntegrationTests {
 
     @Test
     void protectedEndpointRequiresValidToken() throws Exception {
-        mockMvc.perform(get("/api/v1/user/health"))
+        mockMvc.perform(get("/api/products"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Authentication is required"));
 
         String token = registerBuyer("protected@example.com");
 
-        mockMvc.perform(get("/api/v1/user/health")
+        mockMvc.perform(get("/api/products")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").value("User module ready"));
+                .andExpect(status().isOk());
     }
 
     private String registerBuyer(String email) throws Exception {
