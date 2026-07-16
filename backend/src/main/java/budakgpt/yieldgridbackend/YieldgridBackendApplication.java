@@ -5,9 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import budakgpt.yieldgridbackend.config.IntegrationProperties;
+import budakgpt.yieldgridbackend.config.OpenRouterProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(IntegrationProperties.class)
+@EnableConfigurationProperties({IntegrationProperties.class, OpenRouterProperties.class})
 public class YieldgridBackendApplication {
 
     public static void main(String[] args) {
