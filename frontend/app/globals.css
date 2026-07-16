@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-manrope), sans-serif;
-  --font-mono: var(--font-dm-mono), monospace;
+  --font-sans: "Aptos", "Segoe UI", sans-serif;
+  --font-mono: "Cascadia Mono", "Consolas", monospace;
   --color-forest-950: #0c2419;
   --color-forest-900: #122d21;
   --color-forest-800: #173d2c;
@@ -27,7 +27,7 @@ body {
   overflow-x: clip;
   background: #f3f1e8;
   color: #17211b;
-  font-family: var(--font-manrope), sans-serif;
+  font-family: "Aptos", "Segoe UI", sans-serif;
 }
 button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
