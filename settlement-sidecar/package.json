@@ -7,12 +7,14 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
+    "check": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts",
     "deploy": "tsx scripts/deploy.ts",
     "seed": "tsx scripts/seed.ts",
     "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^13.1.0",
+    "@stellar/stellar-sdk": "^16.0.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2"
   },

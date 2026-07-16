@@ -5,7 +5,6 @@ import {
   BASE_FEE,
   type Keypair,
   type xdr,
-  type Operation,
 } from "@stellar/stellar-sdk";
 import { CONFIG, SOROBAN_INCLUSION_FEE } from "./config.js";
 
@@ -27,7 +26,7 @@ export type TxResult = { hash: string; returnValue?: xdr.ScVal };
 // The source keypair covers require_auth via source-account credentials.
 export async function invokeSoroban(
   source: Keypair,
-  operation: xdr.Operation | Operation.Operation,
+  operation: xdr.Operation,
 ): Promise<TxResult> {
   const account = await server.getAccount(source.publicKey());
   const tx = new TransactionBuilder(account, {
