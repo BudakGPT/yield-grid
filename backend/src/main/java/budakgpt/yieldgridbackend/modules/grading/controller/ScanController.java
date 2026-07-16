@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import budakgpt.yieldgridbackend.modules.grading.dto.GradingResultResponse;
 import budakgpt.yieldgridbackend.modules.grading.service.GradingService;
+import budakgpt.yieldgridbackend.modules.grading.service.GradingService.GradingOutcome;
 
 @RestController
 @RequestMapping("/api/scans")
@@ -29,9 +30,12 @@ public class ScanController {
             @RequestParam("crate_count") int crateCount,
             @RequestParam("produce_type") String produceType
     ) {
-        return ResponseEntity.ok()
-                .header(HttpHeaders.WARNING, "299 YieldGrid \"Rehearsal grading cache used\"")
-                .header("X-YieldGrid-Grading-Source", "rehearsal-cache")
-                .body(gradingService.grade(photo, crateCount, produceType));
+        GradingOutcome outcome = gradingService.grade(photo, crateCount, produceType);
+        ResponseEntity.BodyBuilder response = ResponseEntity.ok()
+                .header("X-YieldGrid-Grading-Source", outcome.source());
+        if (outcome.cacheUsed()) {
+            response.header(HttpHeaders.WARNING, "299 YieldGrid \"Rehearsal grading cache used\"");
+        }
+        return response.body(outcome.result());
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import budakgpt.yieldgridbackend.config.OpenRouterProperties;
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
 import budakgpt.yieldgridbackend.modules.cart.repository.CartRepository;
@@ -36,6 +37,7 @@ public class DemoService {
     private final SidecarClient sidecarClient;
     private final YieldGridEventPublisher eventPublisher;
     private final JdbcTemplate jdbcTemplate;
+    private final OpenRouterProperties openRouterProperties;
     private final String gradingMode;
 
     public DemoService(
@@ -48,6 +50,7 @@ public class DemoService {
             SidecarClient sidecarClient,
             YieldGridEventPublisher eventPublisher,
             JdbcTemplate jdbcTemplate,
+            OpenRouterProperties openRouterProperties,
             @Value("${app.grading.mode:rehearsal}") String gradingMode
     ) {
         this.orderRepository = orderRepository;
@@ -59,6 +62,7 @@ public class DemoService {
         this.sidecarClient = sidecarClient;
         this.eventPublisher = eventPublisher;
         this.jdbcTemplate = jdbcTemplate;
+        this.openRouterProperties = openRouterProperties;
         this.gradingMode = gradingMode;
     }
 
@@ -126,13 +130,25 @@ public class DemoService {
         } catch (RuntimeException exception) {
             result.put("database", "unavailable");
         }
-        result.put("grading", "rehearsal".equalsIgnoreCase(gradingMode) ? "rehearsal-cache" : "live");
+        result.put("grading", gradingStatus());
+        if ("openrouter".equalsIgnoreCase(gradingMode)) {
+            result.put("grading_model", openRouterProperties.model());
+        }
         SidecarClient.HealthResponse sidecar = sidecarClient.health();
         result.put("stellar", sidecar.status());
         result.put("contract_id", sidecar.escrowContractId());
         result.put("websocket", "ready");
         result.put("transit", "simulated");
         return result;
+    }
+
+    private String gradingStatus() {
+        if ("rehearsal".equalsIgnoreCase(gradingMode)) {
+            return "rehearsal-cache";
+        }
+        return "openrouter".equalsIgnoreCase(gradingMode) && openRouterProperties.configured()
+                ? "live"
+                : "unconfigured";
     }
 
     private Order findOrder(java.util.UUID orderId) {
