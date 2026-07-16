@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, BadgeCheck, Camera, Clock3, Factory, HandCoins, LockKeyhole, ScanLine, ShieldCheck, ShoppingBasket, Sparkles, Truck } from "lucide-react";
-import { motion, useScroll, useSpring, useTransform } from "motion/react";
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import { useRef } from "react";
 import { HarvestTwin } from "./harvest-twin";
 import { Reveal } from "./reveal";
@@ -16,19 +16,41 @@ const demoBeats = [
 
 export function LandingPage() {
   const heroRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const pointerX = useMotionValue(0);
+  const pointerY = useMotionValue(0);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const smooth = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: .45 });
-  const headlineY = useTransform(smooth, [0, 1], [0, 110]);
-  const modelY = useTransform(smooth, [0, 1], [0, -75]);
-  const ghostY = useTransform(smooth, [0, 1], [0, 180]);
+  const smooth = useSpring(scrollYProgress, { stiffness: 185, damping: 27, mass: .24 });
+  const headlineY = useTransform(smooth, [0, 1], [0, 150]);
+  const modelY = useTransform(smooth, [0, 1], [0, -112]);
+  const ghostY = useTransform(smooth, [0, 1], [0, 240]);
+  const headlineX = useSpring(useTransform(pointerX, [-1, 1], [-9, 9]), { stiffness: 420, damping: 32, mass: .2 });
+  const modelX = useSpring(useTransform(pointerX, [-1, 1], [-16, 16]), { stiffness: 420, damping: 30, mass: .2 });
+  const modelRotateX = useSpring(useTransform(pointerY, [-1, 1], [5.5, -5.5]), { stiffness: 390, damping: 28, mass: .2 });
+  const modelRotateY = useSpring(useTransform(pointerX, [-1, 1], [-6.5, 6.5]), { stiffness: 390, damping: 28, mass: .2 });
+  const accentX = useSpring(useTransform(pointerX, [-1, 1], [-65, 65]), { stiffness: 320, damping: 26, mass: .2 });
+  const accentY = useSpring(useTransform(pointerY, [-1, 1], [-38, 38]), { stiffness: 320, damping: 26, mass: .2 });
+
+  const trackPointer = (event: React.PointerEvent<HTMLElement>) => {
+    if (reduceMotion || event.pointerType === "touch") return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    pointerX.set(((event.clientX - bounds.left) / bounds.width - .5) * 2);
+    pointerY.set(((event.clientY - bounds.top) / bounds.height - .5) * 2);
+  };
+
+  const resetPointer = () => {
+    pointerX.set(0);
+    pointerY.set(0);
+  };
 
   return (
     <>
-      <section ref={heroRef} className="hero-field relative isolate overflow-hidden text-white">
+      <section ref={heroRef} onPointerMove={trackPointer} onPointerLeave={resetPointer} className="hero-field relative isolate overflow-hidden text-white">
         <motion.div style={{ y: ghostY }} className="pointer-events-none absolute -bottom-[5vw] -left-[3vw] -z-10 select-none text-[clamp(11rem,25vw,29rem)] font-black leading-[.7] tracking-[-.11em] text-white/[0.035]">DIRECT</motion.div>
+        <motion.div style={{ x: accentX, y: accentY }} className="pointer-events-none absolute right-[14%] top-[18%] -z-10 size-[420px] rounded-full bg-leaf-400/10 blur-[85px]" />
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(rgba(255,255,255,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.04)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:linear-gradient(to_bottom,black,transparent_92%)]" />
         <div className="site-container grid min-h-[750px] gap-10 py-14 lg:grid-cols-[.92fr_1.08fr] lg:items-center lg:py-16">
-          <motion.div style={{ y: headlineY }} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, ease: [0.22, 1, .36, 1] }} className="relative z-10">
+          <motion.div style={{ y: headlineY, x: headlineX }} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .62, ease: [0.22, 1, .36, 1] }} className="relative z-10">
             <div className="mb-6 flex flex-wrap items-center gap-2"><span className="pill bg-leaf-400 text-forest-950"><Sparkles className="size-3" /> PRD v3 · mission-first</span><span className="font-mono text-[9px] uppercase tracking-[.16em] text-white/42">Frontend prototype · demo data</span></div>
             <h1 className="text-[clamp(3.2rem,6.4vw,6.4rem)] font-black leading-[.86] tracking-[-.085em]">Buy straight<br />from the <span className="text-[#e9efad]">farm.</span></h1>
             <p className="mt-7 max-w-xl text-sm font-medium leading-[1.8] text-white/62 sm:text-base">Kualitas terverifikasi dan pembayaran aman membuat pembeli kota bisa membeli langsung dari petani—tanpa markup broker kualitas—sementara shelf-life matching menjaga hasil panen tetap bernilai.</p>
@@ -36,7 +58,7 @@ export function LandingPage() {
             <div className="mt-10 grid max-w-xl grid-cols-3 divide-x divide-white/10 border-y border-white/10 py-5">{[["70/25/5", "Grade mix"], ["5–7 days", "Shelf-life band"], ["Escrow", "Safe payout"]].map(([value, label]) => <div key={label} className="px-4 first:pl-0"><div className="text-xl font-black text-[#f4f5b5] sm:text-2xl">{value}</div><div className="mt-1 text-[8px] font-bold uppercase tracking-[.13em] text-white/38">{label}</div></div>)}</div>
           </motion.div>
 
-          <motion.article style={{ y: modelY }} initial={{ opacity: 0, scale: .98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: .9, delay: .1 }} className="relative min-h-[570px] overflow-hidden rounded-[2rem] border border-white/12 bg-forest-950/68 shadow-[0_32px_90px_rgba(0,0,0,.28)] backdrop-blur-sm">
+          <motion.article style={{ y: modelY, x: modelX, rotateX: reduceMotion ? 0 : modelRotateX, rotateY: reduceMotion ? 0 : modelRotateY, transformPerspective: 1100 }} initial={{ opacity: 0, scale: .98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: .68, delay: .06 }} className="relative min-h-[570px] overflow-hidden rounded-[2rem] border border-white/12 bg-forest-950/68 shadow-[0_32px_90px_rgba(0,0,0,.28)] backdrop-blur-sm will-change-transform">
             <div className="absolute inset-x-0 top-0 z-20 flex items-start justify-between p-5 sm:p-6"><div><p className="font-mono text-[9px] uppercase tracking-[.15em] text-leaf-400">Live grade card</p><p className="mt-1 text-[10px] font-bold text-white/48">YG-LST-1042 · Amara · 3 crates</p></div><span className="pill border border-white/12 bg-white/8"><BadgeCheck className="size-3 text-leaf-400" /> Codex rubric</span></div>
             <div className="absolute inset-0"><HarvestTwin crop="tomato" /></div>
             <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-forest-950 via-forest-950/95 to-transparent px-5 pb-5 pt-32 sm:px-6 sm:pb-6">
@@ -48,7 +70,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <div className="overflow-hidden border-y border-forest-950/10 bg-[#e5e9a4] py-4"><motion.div className="flex w-max gap-10 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-[.16em] text-forest-800" animate={{ x: [0, -790] }} transition={{ repeat: Infinity, duration: 20, ease: "linear" }}>{Array.from({ length: 3 }).flatMap(() => ["Scan & grade", "List live", "Lock escrow", "Verify delivery", "Pay farmer", "Match shelf life"]).map((item, index) => <span key={`${item}-${index}`} className="inline-flex items-center gap-10">{item}<i className="size-1.5 rounded-full bg-leaf-500" /></span>)}</motion.div></div>
+      <div className="overflow-hidden border-y border-forest-950/10 bg-[#e5e9a4] py-4"><motion.div className="flex w-max gap-10 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-[.16em] text-forest-800" animate={{ x: [0, -790] }} transition={{ repeat: Infinity, duration: 14, ease: "linear" }}>{Array.from({ length: 3 }).flatMap(() => ["Scan & grade", "List live", "Lock escrow", "Verify delivery", "Pay farmer", "Match shelf life"]).map((item, index) => <span key={`${item}-${index}`} className="inline-flex items-center gap-10">{item}<i className="size-1.5 rounded-full bg-leaf-500" /></span>)}</motion.div></div>
 
       <div className="site-container py-14 sm:py-16">
         <Reveal className="grid gap-8 border-b border-black/8 pb-10 lg:grid-cols-[.75fr_1.25fr] lg:items-end"><div><span className="eyebrow">The three-minute demo</span><h2 className="mt-3 text-4xl font-black leading-[.96] tracking-[-.065em] sm:text-6xl">One crate.<br /><span className="text-ink-600/40">One complete trade.</span></h2></div><p className="max-w-2xl text-sm leading-[1.8] text-ink-600">YieldGrid menggantikan dua pekerjaan broker kualitas: penilaian dengan rubric grading, dan kepercayaan transaksi dengan escrow. Logistik tetap ada dan selalu ditandai sebagai simulasi di prototype ini.</p></Reveal>

@@ -54,7 +54,7 @@ export function HarvestTwin({ crop = "tomato" }: { crop?: keyof typeof cropColor
       <Float speed={1.1} rotationIntensity={.08} floatIntensity={.18}><Crate crop={crop} /></Float>
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0,-.04,0]}><circleGeometry args={[2.4,48]} /><shadowMaterial transparent opacity={.26} /></mesh>
       <gridHelper args={[6.4,13,"#8bad3c","#2b5a42"]} position={[0,-.02,0]} />
-      <OrbitControls enablePan={false} enableZoom={false} minPolarAngle={Math.PI / 3.1} maxPolarAngle={Math.PI / 2.05} />
+      <OrbitControls enablePan={false} enableZoom={false} enableDamping dampingFactor={.055} rotateSpeed={1.35} minPolarAngle={Math.PI / 3.1} maxPolarAngle={Math.PI / 2.05} />
     </Canvas>
   );
 }

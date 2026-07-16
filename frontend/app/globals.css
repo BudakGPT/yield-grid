@@ -59,10 +59,11 @@ body::before {
 .primary-button, .soft-button {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
   border-radius: .85rem; padding: .75rem 1rem; font-size: .72rem; font-weight: 800;
-  transition: transform .25s ease, background .25s ease, border-color .25s ease;
+  transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
 .primary-button { border: 0; background: #173d2c; color: white; box-shadow: 0 10px 24px rgba(23,61,44,.16); }
-.primary-button:hover, .soft-button:hover { transform: translateY(-2px); }
+.primary-button:hover, .soft-button:hover { transform: translateY(-3px); }
+.primary-button:active, .soft-button:active { transform: translateY(0) scale(.975); }
 .soft-button { border: 1px solid rgba(12,36,25,.11); background: white; color: #17211b; }
 .grid-field {
   background-color: #173d2c;
@@ -84,6 +85,11 @@ body::before {
 .map-frame iframe { filter: saturate(.76) contrast(.96) sepia(.06); }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { scrollbar-width: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .panel { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .panel:hover { border-color: rgba(34,84,59,.16); box-shadow: inset 0 1px rgba(255,255,255,.9), 0 24px 62px rgba(12,36,25,.095); }
+}
 
 @media (max-width: 767px) {
   .site-container { width: min(100% - 1.5rem, 1500px); }
