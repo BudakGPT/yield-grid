@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -18,6 +19,17 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import budakgpt.yieldgridbackend.common.response.ErrorResponse;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
 import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsException;
+import budakgpt.yieldgridbackend.modules.order.exception.InsufficientStockException;
+import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderRequestException;
+import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderStatusTransitionException;
+import budakgpt.yieldgridbackend.modules.order.exception.OrderNotFoundException;
+import budakgpt.yieldgridbackend.modules.order.exception.ProductInactiveException;
+import budakgpt.yieldgridbackend.modules.order.exception.UnauthorizedOrderAccessException;
+import budakgpt.yieldgridbackend.modules.product.exception.CategoryNotFoundException;
+import budakgpt.yieldgridbackend.modules.product.exception.InsufficientProductPermissionException;
+import budakgpt.yieldgridbackend.modules.product.exception.InvalidProductStatusTransitionException;
+import budakgpt.yieldgridbackend.modules.product.exception.ProductNotFoundException;
+import budakgpt.yieldgridbackend.modules.product.exception.UnauthorizedProductAccessException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -107,6 +119,66 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<ErrorResponse> handleJwtException(JwtException exception, HttpServletRequest request) {
         return error(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token", request);
+    }
+
+    @ExceptionHandler({ProductNotFoundException.class, CategoryNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleProductNotFound(RuntimeException exception, HttpServletRequest request) {
+        return error(HttpStatus.NOT_FOUND, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(UnauthorizedProductAccessException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedProductAccess(
+            UnauthorizedProductAccessException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.FORBIDDEN, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorizationDenied(
+            AuthorizationDeniedException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.FORBIDDEN, "Access is denied", request);
+    }
+
+    @ExceptionHandler(InsufficientProductPermissionException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientProductPermission(
+            InsufficientProductPermissionException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.FORBIDDEN, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidProductStatusTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidStatusTransition(
+            InvalidProductStatusTransitionException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleOrderNotFound(OrderNotFoundException exception, HttpServletRequest request) {
+        return error(HttpStatus.NOT_FOUND, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(UnauthorizedOrderAccessException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedOrderAccess(
+            UnauthorizedOrderAccessException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.FORBIDDEN, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler({
+            InvalidOrderRequestException.class,
+            InvalidOrderStatusTransitionException.class,
+            ProductInactiveException.class,
+            InsufficientStockException.class
+    })
+    public ResponseEntity<ErrorResponse> handleOrderBadRequest(RuntimeException exception, HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
     }
 
     @ExceptionHandler(Exception.class)

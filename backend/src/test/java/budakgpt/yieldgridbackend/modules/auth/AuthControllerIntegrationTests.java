@@ -18,6 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
+import budakgpt.yieldgridbackend.modules.order.repository.OrderRepository;
+import budakgpt.yieldgridbackend.modules.product.repository.ProductCategoryRepository;
+import budakgpt.yieldgridbackend.modules.product.repository.ProductRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -29,8 +32,20 @@ class AuthControllerIntegrationTests {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private ProductCategoryRepository categoryRepository;
+
     @BeforeEach
     void setUp() {
+        orderRepository.deleteAll();
+        productRepository.deleteAll();
+        categoryRepository.deleteAll();
         userRepository.deleteAll();
     }
 

@@ -19,6 +19,12 @@ public class HomeController {
                 List.of(
                         "POST /api/auth/register",
                         "POST /api/auth/login",
+                        "GET /api/products",
+                        "GET /api/products/search",
+                        "GET /api/categories",
+                        "POST /api/orders",
+                        "GET /api/orders/my",
+                        "GET /api/orders/seller",
                         "/api/v1/user/health",
                         "/api/v1/farmer/health",
                         "/api/v1/harvest/health",
