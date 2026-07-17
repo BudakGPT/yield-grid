@@ -29,8 +29,8 @@ the farmer and a buyer refund using a temperature-based discount.
 </p>
 
 <p align="center">
-  <a href="http://localhost:3000">
-    <img src="https://img.shields.io/badge/Local_Demo-localhost%3A3000-B7E23B?style=for-the-badge" alt="Local demo"/>
+  <a href="https://yield-grid.vercel.app/">
+    <img src="https://img.shields.io/badge/Deployment-yield grid-B7E23B?style=for-the-badge" alt="Deployment"/>
   </a>
   &nbsp;
   <a href="https://github.com/BudakGPT/yield-grid">
