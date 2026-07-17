@@ -9,7 +9,9 @@ import budakgpt.yieldgridbackend.modules.auth.dto.AuthResponse;
 import budakgpt.yieldgridbackend.modules.auth.dto.LoginRequest;
 import budakgpt.yieldgridbackend.modules.auth.dto.RegisterRequest;
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
+import budakgpt.yieldgridbackend.modules.auth.enums.Role;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
+import budakgpt.yieldgridbackend.modules.auth.exception.PrivilegedRoleRegistrationException;
 import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsException;
 import budakgpt.yieldgridbackend.modules.auth.mapper.UserMapper;
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
@@ -47,6 +49,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        // Public signup may only create BUYER or SELLER; privileged roles need an internal path.
+        if (request.role() != Role.BUYER && request.role() != Role.SELLER) {
+            throw new PrivilegedRoleRegistrationException(request.role());
+        }
+
         String normalizedEmail = normalizeEmail(request.email());
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new UserAlreadyExistsException(normalizedEmail);
@@ -73,9 +80,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         if (sidecarClient.isEnabled()) {
-            String walletRole = request.role() == budakgpt.yieldgridbackend.modules.auth.enums.Role.BUYER
-                    ? "buyer"
-                    : "farmer";
+            String walletRole = request.role() == Role.BUYER ? "buyer" : "farmer";
             SidecarClient.ProvisionResponse wallet = sidecarClient.provision(walletRole);
             user.setStellarPublicKey(wallet.publicKey());
             user.setStellarSecretEnc(secretCryptoService.encrypt(wallet.secret()));

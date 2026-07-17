@@ -3,6 +3,7 @@ package budakgpt.yieldgridbackend.modules.demo;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,7 @@ import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
 import budakgpt.yieldgridbackend.modules.cart.repository.CartRepository;
 import budakgpt.yieldgridbackend.modules.demo.dto.DemoMintRequest;
+import budakgpt.yieldgridbackend.modules.demo.exception.ActiveEscrowResetException;
 import budakgpt.yieldgridbackend.modules.grading.repository.ProductGradingRepository;
 import budakgpt.yieldgridbackend.modules.order.entity.Order;
 import budakgpt.yieldgridbackend.modules.order.enums.EscrowStatus;
@@ -120,8 +122,15 @@ public class DemoService {
         return Map.of("tx_hash", hash, "address", address, "amount", request.amount());
     }
 
+    // Escrow states with buyer funds locked on-chain; deleting these would orphan real testnet funds.
+    private static final List<EscrowStatus> ACTIVE_ESCROW_STATUSES =
+            List.of(EscrowStatus.ESCROWED, EscrowStatus.IN_TRANSIT, EscrowStatus.BREACHED);
+
     @Transactional
     public Map<String, Object> reset() {
+        if (orderRepository.existsByEscrowStatusIn(ACTIVE_ESCROW_STATUSES)) {
+            throw new ActiveEscrowResetException();
+        }
         telemetryRepository.deleteAllInBatch();
         orderRepository.deleteAll();
         cartRepository.deleteAll();

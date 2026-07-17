@@ -9,6 +9,7 @@ Direct farm-to-buyer marketplace: verified quality, safe direct escrow payment, 
 | `frontend/` | Next.js (React), PWA | Farmer PWA, buyer dashboard, demo console. All web surfaces. |
 | `backend/`  | Spring Boot (Java) + Postgres | REST API, WebSocket hub, grading service, settlement service. The sole chain-caller. |
 | `contract/` | Rust / Soroban | The three-function escrow contract on Stellar testnet. |
+| `settlement-sidecar/` | Node / TypeScript (Express) | Chain-facing sidecar: owns custodial keys and all Soroban escrow calls. |
 
 ## Local integrated setup
 
@@ -39,3 +40,16 @@ npm run dev
 ```
 
 Open `http://localhost:3000`. Backend health is available at `http://localhost:8083/api/demo/health`. Keep `GRADING_MODE=rehearsal` when no OpenRouter key is available. Never commit `.env`.
+
+## Deployment and CI
+
+Deployment (CD) is handled by the hosting platforms, so there is no custom deploy pipeline and no Docker.
+
+| Component | Host | How it deploys |
+|-----------|------|----------------|
+| `frontend/` | Vercel | Auto build and deploy on push. |
+| `backend/` | Railway | Nixpacks auto-builds the Gradle app on push. |
+| `settlement-sidecar/` | Railway (second service) | Set Root Directory to `settlement-sidecar`, Start Command `npm start`. |
+| `contract/` | Stellar testnet | Deployed manually via `npm run deploy` in `settlement-sidecar/`. |
+
+CI is the only piece we own: `.github/workflows/ci.yml` runs on every pull request to `master`. It uses path filters so only the changed components run: backend (`gradlew build`), sidecar (typecheck + tests), contract (`cargo test`), and frontend (`eslint`). This is a quality gate before merge; it does not deploy.
