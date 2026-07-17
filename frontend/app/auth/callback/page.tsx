@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Leaf, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth-provider";
@@ -14,7 +13,6 @@ type Phase = "working" | "needs-role" | "error";
 
 export default function AuthCallbackPage() {
   const { oauthLogin } = useAuth();
-  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("working");
   const [message, setMessage] = useState("Finishing Google sign-in...");
   const token = useRef<string | null>(null);
@@ -27,8 +25,12 @@ export default function AuthCallbackPage() {
       : session.user.role === "SELLER"
         ? "/farmer"
         : "/marketplace";
-    router.replace(destination);
-  }, [oauthLogin, router]);
+    // Hard navigation, not router.replace: supabase's detectSessionInUrl strips the
+    // ?code= param with history.replaceState around this same tick, which cancels an
+    // in-flight App Router navigation and strands the page on "Finishing sign-in"
+    // even though the session was already persisted.
+    window.location.replace(destination);
+  }, [oauthLogin]);
 
   const handleFailure = useCallback((reason: unknown) => {
     if (reason instanceof ApiError && reason.status === 428) {
@@ -39,11 +41,12 @@ export default function AuthCallbackPage() {
     setPhase("error");
   }, []);
 
+  // Runs once. Deliberately not keyed on `finish`/`handleFailure`: oauthLogin's
+  // identity changes every time AuthProvider's session/ready state moves, which
+  // would tear this effect down mid-exchange and abort the sign-in.
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-
-    let active = true;
 
     const waitForToken = async (): Promise<string | null> => {
       const current = await supabase!.auth.getSession();
@@ -70,7 +73,6 @@ export default function AuthCallbackPage() {
         return;
       }
       const accessToken = await waitForToken();
-      if (!active) return;
       if (!accessToken) {
         setMessage("Google sign-in did not complete. Please try again.");
         setPhase("error");
@@ -81,14 +83,11 @@ export default function AuthCallbackPage() {
       try {
         await finish(accessToken, storedRole || undefined);
       } catch (reason) {
-        if (active) handleFailure(reason);
+        handleFailure(reason);
       }
     })();
-
-    return () => {
-      active = false;
-    };
-  }, [finish, handleFailure]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const chooseRole = async (role: Role) => {
     if (!token.current) return;
