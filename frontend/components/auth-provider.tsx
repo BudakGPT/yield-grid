@@ -9,6 +9,7 @@ type AuthContextValue = {
   ready: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (fullName: string, email: string, password: string, role: Role) => Promise<void>;
+  oauthLogin: (accessToken: string, role?: Role) => Promise<AuthResponse>;
   updateProfile: (profile: UpdateProfileInput) => Promise<Profile>;
   logout: () => void;
 };
@@ -43,6 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const next = await api.signup(fullName, email, password, role);
       writeSession(next);
       setSession(next);
+    },
+    oauthLogin: async (accessToken, role) => {
+      const next = await api.oauthLogin(accessToken, role);
+      writeSession(next);
+      setSession(next);
+      return next;
     },
     updateProfile: async (profile) => {
       const updated = await api.updateMyProfile(profile);
