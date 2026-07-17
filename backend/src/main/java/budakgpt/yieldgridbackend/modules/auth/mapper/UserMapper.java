@@ -15,7 +15,9 @@ public class UserMapper {
                 user.getEmail(),
                 user.getRole(),
                 user.getEnabled(),
-                user.getEmailVerified()
+                user.getEmailVerified(),
+                user.getStellarPublicKey(),
+                user.getStellarPublicKey() != null && user.getStellarSecretEnc() != null
         );
     }
 }

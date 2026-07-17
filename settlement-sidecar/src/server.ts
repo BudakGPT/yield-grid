@@ -12,7 +12,7 @@ import {
   createOrder,
   confirmDelivery,
   settleWithDiscount,
-  rupiahToBaseUnits,
+  parseBaseUnits,
 } from "./escrow.js";
 
 const app = express();
@@ -41,12 +41,21 @@ app.get(
   "/health",
   wrap(async (_req, res) => {
     const health = await rpcServer.getHealth();
+    const configured = Boolean(
+      CONFIG.escrowContractId &&
+      CONFIG.ygidrSacAddress &&
+      CONFIG.adminSecret &&
+      CONFIG.issuerSecret &&
+      CONFIG.treasurySecret,
+    );
     let admin = "0";
     if (CONFIG.ygidrIssuerPublic && CONFIG.adminSecret) {
       admin = await getYgidrBalance(Keypair.fromSecret(CONFIG.adminSecret).publicKey()).catch(() => "n/a");
     }
     res.json({
-      status: health.status,
+      status: configured && health.status === "healthy" ? "ready" : "not_ready",
+      rpcStatus: health.status,
+      configured,
       escrowContractId: CONFIG.escrowContractId || null,
       ygidrSacAddress: CONFIG.ygidrSacAddress || null,
       adminYgidrBalance: admin,
@@ -82,19 +91,33 @@ app.post(
 );
 
 app.post(
+  "/sign",
+  auth,
+  wrap(async (req, res) => {
+    const { secret, payload } = req.body ?? {};
+    if (!secret || typeof payload !== "string") {
+      res.status(400).json({ error: "secret and payload required" });
+      return;
+    }
+    const signature = Keypair.fromSecret(secret).sign(Buffer.from(payload, "utf8"));
+    res.json({ signature: signature.toString("base64") });
+  }),
+);
+
+app.post(
   "/escrow/create",
   auth,
   wrap(async (req, res) => {
-    const { orderId, buyerSecret, farmerPublicKey, rupiah } = req.body ?? {};
-    if (!orderId || !buyerSecret || !farmerPublicKey || rupiah == null) {
-      res.status(400).json({ error: "orderId, buyerSecret, farmerPublicKey, rupiah required" });
+    const { orderId, buyerSecret, farmerPublicKey, amountBaseUnits } = req.body ?? {};
+    if (!orderId || !buyerSecret || !farmerPublicKey || amountBaseUnits == null) {
+      res.status(400).json({ error: "orderId, buyerSecret, farmerPublicKey, amountBaseUnits required" });
       return;
     }
     const result = await createOrder({
       orderId,
       buyerKeypair: Keypair.fromSecret(buyerSecret),
       farmerPublicKey,
-      amountBaseUnits: rupiahToBaseUnits(String(rupiah)),
+      amountBaseUnits: parseBaseUnits(String(amountBaseUnits)),
     });
     res.json({ hash: result.hash });
   }),
@@ -128,6 +151,6 @@ app.post(
   }),
 );
 
-app.listen(CONFIG.port, () => {
+export const httpServer = app.listen(CONFIG.port, () => {
   console.log("settlement sidecar listening on :" + CONFIG.port);
 });

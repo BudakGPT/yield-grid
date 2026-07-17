@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import budakgpt.yieldgridbackend.modules.order.enums.OrderStatus;
+import budakgpt.yieldgridbackend.modules.order.enums.EscrowStatus;
 import budakgpt.yieldgridbackend.modules.order.enums.PaymentMethod;
 
 public record OrderResponse(
@@ -29,6 +30,14 @@ public record OrderResponse(
         List<OrderItemResponse> items,
         Instant orderedAt,
         Instant updatedAt,
-        Instant completedAt
+        Instant completedAt,
+        EscrowStatus escrowStatus,
+        UUID farmerId,
+        String farmerName,
+        String escrowTxHash,
+        String settleTxHash,
+        Integer discountBps,
+        Boolean breachDetected,
+        BigDecimal lastTemperatureC
 ) {
 }

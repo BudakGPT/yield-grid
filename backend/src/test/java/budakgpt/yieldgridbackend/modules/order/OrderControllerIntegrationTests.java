@@ -18,13 +18,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import budakgpt.yieldgridbackend.support.TestSupabaseAuthConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
+import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
+import budakgpt.yieldgridbackend.modules.auth.enums.Role;
+import budakgpt.yieldgridbackend.modules.auth.security.JwtService;
 import budakgpt.yieldgridbackend.modules.cart.repository.CartRepository;
 import budakgpt.yieldgridbackend.modules.order.repository.OrderRepository;
 import budakgpt.yieldgridbackend.modules.product.entity.ProductCategory;
@@ -33,6 +38,7 @@ import budakgpt.yieldgridbackend.modules.product.repository.ProductRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestSupabaseAuthConfiguration.class)
 class OrderControllerIntegrationTests {
 
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
@@ -42,6 +48,9 @@ class OrderControllerIntegrationTests {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private JwtService jwtService;
 
     @Autowired
     private OrderRepository orderRepository;
@@ -133,6 +142,33 @@ class OrderControllerIntegrationTests {
                                 """.formatted(productId, productId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Duplicate products are not allowed in a single order"));
+    }
+
+    @Test
+    void escrowOrderRejectsProductsFromMultipleFarmers() throws Exception {
+        String firstSellerToken = register("seller-first-escrow@example.com", "SELLER");
+        String secondSellerToken = register("seller-second-escrow@example.com", "SELLER");
+        String buyerToken = register("buyer-mixed-escrow@example.com", "BUYER");
+        UUID firstProductId = createProduct(firstSellerToken, "First Farmer Crate", 25, 5);
+        UUID secondProductId = createProduct(secondSellerToken, "Second Farmer Crate", 30, 5);
+
+        mockMvc.perform(post("/api/orders")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(buyerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "items": [
+                                    { "productId": "%s", "quantity": 1 },
+                                    { "productId": "%s", "quantity": 1 }
+                                  ],
+                                  "paymentMethod": "YGIDR_ESCROW",
+                                  "recipientName": "Buyer",
+                                  "recipientPhone": "08123456789",
+                                  "fullAddress": "YieldGrid checkpoint"
+                                }
+                                """.formatted(firstProductId, secondProductId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("YGIDR escrow orders must contain products from one farmer"));
     }
 
     @Test
@@ -294,6 +330,17 @@ class OrderControllerIntegrationTests {
     }
 
     private String register(String email, String role) throws Exception {
+        if (!"BUYER".equals(role) && !"SELLER".equals(role)) {
+            UserEntity profile = userRepository.save(UserEntity.builder()
+                    .id(UUID.randomUUID())
+                    .fullName(role + " User")
+                    .email(email)
+                    .role(Role.valueOf(role))
+                    .enabled(true)
+                    .emailVerified(true)
+                    .build());
+            return jwtService.generateToken(profile);
+        }
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

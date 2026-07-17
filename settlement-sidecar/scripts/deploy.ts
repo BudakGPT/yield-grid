@@ -14,7 +14,7 @@ import { friendbotFund } from "../src/stellar.js";
 
 const WASM_PATH = resolve(
   process.cwd(),
-  "../contract/target/wasm32-unknown-unknown/release/yieldgrid_escrow.wasm",
+  "../contract/target/wasm32v1-none/release/yieldgrid_escrow.wasm",
 );
 const ENV_PATH = resolve(process.cwd(), ".env");
 

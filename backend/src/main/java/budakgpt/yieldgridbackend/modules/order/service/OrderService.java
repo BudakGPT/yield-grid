@@ -9,9 +9,12 @@ import budakgpt.yieldgridbackend.modules.order.dto.CreateOrderRequest;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderSummaryResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.UpdateOrderStatusRequest;
+import budakgpt.yieldgridbackend.modules.order.dto.DeliveryRequest;
 
 public interface OrderService {
     OrderResponse createOrder(CreateOrderRequest request);
+
+    OrderResponse deliverOrder(UUID id, DeliveryRequest request);
 
     OrderResponse cancelOrder(UUID id);
 

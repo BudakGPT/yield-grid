@@ -26,9 +26,12 @@ import budakgpt.yieldgridbackend.modules.order.dto.OrderItemRequest;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderSummaryResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.UpdateOrderStatusRequest;
+import budakgpt.yieldgridbackend.modules.order.dto.DeliveryRequest;
 import budakgpt.yieldgridbackend.modules.order.entity.Order;
 import budakgpt.yieldgridbackend.modules.order.entity.OrderItem;
 import budakgpt.yieldgridbackend.modules.order.enums.OrderStatus;
+import budakgpt.yieldgridbackend.modules.order.enums.EscrowStatus;
+import budakgpt.yieldgridbackend.modules.order.enums.PaymentMethod;
 import budakgpt.yieldgridbackend.modules.order.exception.InsufficientStockException;
 import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderRequestException;
 import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderStatusTransitionException;
@@ -42,6 +45,8 @@ import budakgpt.yieldgridbackend.modules.product.entity.Product;
 import budakgpt.yieldgridbackend.modules.product.enums.ProductStatus;
 import budakgpt.yieldgridbackend.modules.product.exception.ProductNotFoundException;
 import budakgpt.yieldgridbackend.modules.product.repository.ProductRepository;
+import budakgpt.yieldgridbackend.modules.settlement.SettlementService;
+import budakgpt.yieldgridbackend.modules.ws.YieldGridEventPublisher;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -64,17 +69,23 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final OrderMapper orderMapper;
+    private final SettlementService settlementService;
+    private final YieldGridEventPublisher eventPublisher;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
             ProductRepository productRepository,
             UserRepository userRepository,
-            OrderMapper orderMapper
+            OrderMapper orderMapper,
+            SettlementService settlementService,
+            YieldGridEventPublisher eventPublisher
     ) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.orderMapper = orderMapper;
+        this.settlementService = settlementService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -94,6 +105,7 @@ public class OrderServiceImpl implements OrderService {
                 .subtotal(BigDecimal.ZERO)
                 .shippingFee(DEFAULT_SHIPPING_FEE)
                 .totalAmount(BigDecimal.ZERO)
+                .escrowStatus(request.paymentMethod() == PaymentMethod.YGIDR_ESCROW ? EscrowStatus.CREATED : EscrowStatus.NONE)
                 .recipientName(request.recipientName().trim())
                 .recipientPhone(request.recipientPhone().trim())
                 .province(trimToNull(request.province()))
@@ -131,6 +143,39 @@ public class OrderServiceImpl implements OrderService {
 
         order.setSubtotal(subtotal);
         order.setTotalAmount(subtotal.add(order.getShippingFee()));
+        if (request.paymentMethod() == PaymentMethod.YGIDR_ESCROW) {
+            Set<UUID> sellerIds = order.getItems().stream()
+                    .map(item -> item.getSeller().getId())
+                    .collect(Collectors.toSet());
+            if (sellerIds.size() != 1) {
+                throw new InvalidOrderRequestException("YGIDR escrow orders must contain products from one farmer");
+            }
+            order.setFarmerSeller(order.getItems().getFirst().getSeller());
+        }
+        Order saved = orderRepository.saveAndFlush(order);
+        eventPublisher.publish("order.created", saved.getId(), Map.of("status", saved.getEscrowStatus().name()));
+        if (request.paymentMethod() == PaymentMethod.YGIDR_ESCROW) {
+            settlementService.lockEscrow(saved);
+            saved.setStatus(OrderStatus.PAID);
+            saved = orderRepository.save(saved);
+        }
+        return orderMapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse deliverOrder(UUID id, DeliveryRequest request) {
+        Order order = findOrder(id);
+        UserEntity user = currentUser();
+        if (!isBuyer(order, user) && !isAdmin(user)) {
+            throw new UnauthorizedOrderAccessException();
+        }
+        if (order.getPaymentMethod() != PaymentMethod.YGIDR_ESCROW) {
+            throw new InvalidOrderRequestException("Delivery settlement is only available for YGIDR escrow orders");
+        }
+        settlementService.settle(order);
+        order.setStatus(OrderStatus.COMPLETED);
+        order.setCompletedAt(Instant.now());
         return orderMapper.toResponse(orderRepository.save(order));
     }
 

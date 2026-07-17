@@ -25,7 +25,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/register")
+    @PostMapping({"/register", "/signup"})
     @Operation(summary = "Register a user", description = "Creates a user account and returns a JWT access token")
     @SecurityRequirements
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {

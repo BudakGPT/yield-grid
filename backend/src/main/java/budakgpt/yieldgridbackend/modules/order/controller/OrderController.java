@@ -19,6 +19,7 @@ import budakgpt.yieldgridbackend.modules.order.dto.CreateOrderRequest;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderSummaryResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.UpdateOrderStatusRequest;
+import budakgpt.yieldgridbackend.modules.order.dto.DeliveryRequest;
 import budakgpt.yieldgridbackend.modules.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,6 +40,16 @@ public class OrderController {
     @Operation(summary = "Create an order")
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request));
+    }
+
+    @PostMapping("/{id}/deliver")
+    @PreAuthorize("hasAnyRole('BUYER','ADMIN')")
+    @Operation(summary = "Verify delivery and settle escrow")
+    public OrderResponse deliverOrder(
+            @PathVariable UUID id,
+            @RequestBody(required = false) DeliveryRequest request
+    ) {
+        return orderService.deliverOrder(id, request == null ? new DeliveryRequest(null) : request);
     }
 
     @GetMapping

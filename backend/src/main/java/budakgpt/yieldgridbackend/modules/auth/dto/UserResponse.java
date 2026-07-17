@@ -10,6 +10,8 @@ public record UserResponse(
         String email,
         Role role,
         Boolean enabled,
-        Boolean emailVerified
+        Boolean emailVerified,
+        String stellarPublicKey,
+        boolean walletReady
 ) {
 }

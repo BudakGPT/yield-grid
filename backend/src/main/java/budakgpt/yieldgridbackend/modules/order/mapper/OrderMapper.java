@@ -35,7 +35,15 @@ public class OrderMapper {
                 toItemResponses(order.getItems()),
                 order.getOrderedAt(),
                 order.getUpdatedAt(),
-                order.getCompletedAt()
+                order.getCompletedAt(),
+                order.getEscrowStatus(),
+                order.getFarmerSeller() == null ? null : order.getFarmerSeller().getId(),
+                order.getFarmerSeller() == null ? null : order.getFarmerSeller().getFullName(),
+                order.getEscrowTxHash(),
+                order.getSettleTxHash(),
+                order.getDiscountBps(),
+                order.getBreachDetected(),
+                order.getLastTemperatureC()
         );
     }
 

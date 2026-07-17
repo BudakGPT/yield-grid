@@ -19,6 +19,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import budakgpt.yieldgridbackend.common.response.ErrorResponse;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
 import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsException;
+import budakgpt.yieldgridbackend.modules.auth.exception.SupabaseAuthException;
 import budakgpt.yieldgridbackend.modules.cart.exception.CartItemNotFoundException;
 import budakgpt.yieldgridbackend.modules.cart.exception.CartNotFoundException;
 import budakgpt.yieldgridbackend.modules.cart.exception.EmptyCartCheckoutException;
@@ -34,6 +35,7 @@ import budakgpt.yieldgridbackend.modules.product.exception.InsufficientProductPe
 import budakgpt.yieldgridbackend.modules.product.exception.InvalidProductStatusTransitionException;
 import budakgpt.yieldgridbackend.modules.product.exception.ProductNotFoundException;
 import budakgpt.yieldgridbackend.modules.product.exception.UnauthorizedProductAccessException;
+import budakgpt.yieldgridbackend.modules.stellar.SidecarUnavailableException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -118,6 +120,15 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return error(HttpStatus.UNAUTHORIZED, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(SupabaseAuthException.class)
+    public ResponseEntity<ErrorResponse> handleSupabaseAuth(
+            SupabaseAuthException exception,
+            HttpServletRequest request
+    ) {
+        logger.warn("Supabase Auth request failed: {}", exception.getMessage());
+        return error(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage(), request);
     }
 
     @ExceptionHandler(JwtException.class)
@@ -210,6 +221,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception exception, HttpServletRequest request) {
         logger.error("Unexpected application error", exception);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request);
+    }
+
+    @ExceptionHandler(SidecarUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleSidecarUnavailable(
+            SidecarUnavailableException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage(), request);
     }
 
     private ResponseEntity<ErrorResponse> error(HttpStatus status, String message, HttpServletRequest request) {
