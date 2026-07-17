@@ -32,17 +32,18 @@ const EMPTY_DELIVERY: DeliveryDetails = {
 };
 
 function ListingCard({ listing, onBuy, orderActive, canBuy }: { listing: MarketplaceListing; onBuy: () => void; orderActive: boolean; canBuy: boolean }) {
+  const dominantRecommendation = listing.gradeRecommendations.find((item) => item.grade === listing.dominantGrade.grade);
   return (
     <article className="panel group overflow-hidden p-2">
       <div className="relative h-60 overflow-hidden rounded-[1.15rem]">
         <Image src={listing.image} alt={listing.produce} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-forest-950/82 via-transparent to-transparent" />
-        <div className="absolute left-3 top-3 flex gap-2">
+        <div className="absolute left-3 right-3 top-3 flex flex-wrap gap-2">
           <span className="pill bg-leaf-400 text-forest-950"><BadgeCheck className="size-3" /> Available</span>
           <span className="pill bg-white/90 text-forest-950"><Clock3 className="size-3" /> {listing.shelfLife}</span>
+          <span className="pill bg-forest-950/85 text-white">{listing.dominantGrade.percentage}% Grade {listing.dominantGrade.grade}</span>
         </div>
         <div className="absolute inset-x-4 bottom-4 text-white">
-          <p className="font-mono text-[8px] uppercase tracking-wider text-white/55">{listing.id}</p>
           <h3 className="mt-1 text-2xl font-black tracking-[-.04em]">{listing.produce}</h3>
           {listing.location && <p className="mt-1 flex items-center gap-1 text-[9px] text-white/55"><MapPin className="size-3" />{listing.location}</p>}
         </div>
@@ -52,9 +53,10 @@ function ListingCard({ listing, onBuy, orderActive, canBuy }: { listing: Marketp
           <div><p className="text-[9px] text-ink-600">Farmer</p><p className="mt-1 text-xs font-black text-forest-950">{listing.farmer}</p></div>
           <div className="text-right"><p className="text-xl font-black tracking-[-.04em] text-forest-950">Rp{listing.pricePerKg.toLocaleString("id-ID")}</p><p className="text-[8px] uppercase tracking-wider text-ink-600">per kg · {listing.weightKg} kg</p></div>
         </div>
-        <div className="mt-5 flex h-2 overflow-hidden rounded-full bg-cream-200"><i className="bg-leaf-500" style={{ width: `${listing.grade.A}%` }} /><i className="bg-[#e6bb68]" style={{ width: `${listing.grade.B}%` }} /><i className="bg-clay-500" style={{ width: `${listing.grade.reject}%` }} /></div>
-        <div className="mt-2 flex justify-between font-mono text-[8px] uppercase text-ink-600"><span>A {listing.grade.A}%</span><span>B {listing.grade.B}%</span><span>Reject {listing.grade.reject}%</span></div>
-        <div className="mt-4 flex items-center gap-2 rounded-xl bg-leaf-100 p-3"><BadgeCheck className="size-4 shrink-0 text-forest-700" /><p className="text-[8px] font-bold leading-4 text-forest-700">{listing.codex}<br /><span className="font-normal opacity-65">Visual criteria only</span></p></div>
+        <div className="mt-5 flex h-2 overflow-hidden rounded-full bg-cream-200"><i className="bg-leaf-500" style={{ width: `${listing.grade.A}%` }} /><i className="bg-[#e6bb68]" style={{ width: `${listing.grade.B}%` }} /><i className="bg-clay-500" style={{ width: `${listing.grade.C}%` }} /></div>
+        <div className="mt-2 flex justify-between font-mono text-[8px] uppercase text-ink-600"><span>A {listing.grade.A}%</span><span>B {listing.grade.B}%</span><span>C {listing.grade.C}%</span></div>
+        <div className="mt-4 flex items-start gap-2 rounded-xl bg-leaf-100 p-3"><BadgeCheck className="mt-0.5 size-4 shrink-0 text-forest-700" /><p className="text-[8px] font-bold leading-4 text-forest-700">{listing.codex}<br /><span className="font-normal opacity-70">{dominantRecommendation?.description ?? "Visual grading recommendation"}</span></p></div>
+        <div className="mt-3 grid grid-cols-3 gap-1.5">{listing.gradeRecommendations.map((item) => <div key={item.grade} className={`rounded-lg p-2 ${item.grade === listing.dominantGrade.grade ? "bg-forest-950 text-white" : "bg-cream-50 text-ink-600"}`}><p className="text-[8px] font-black">Grade {item.grade}</p><p className="mt-1 line-clamp-2 text-[7px] leading-3 opacity-70">{item.title}</p></div>)}</div>
         {orderActive
           ? <Link href="/order" className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-forest-950 text-[10px] font-black text-white">View order <ArrowRight className="size-3.5" /></Link>
           : canBuy
@@ -161,7 +163,7 @@ export function BuyerMarketplace() {
           <motion.div initial={{ y: 30, scale: .98 }} animate={{ y: 0, scale: 1 }} exit={{ y: 20, opacity: 0 }} className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-[1.8rem] bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-start justify-between bg-forest-950 p-5 text-white"><div><p className="eyebrow !text-leaf-400">Direct order</p><h2 className="mt-2 text-2xl font-black">Buy from {selected.farmer}</h2></div><button onClick={() => setSelected(null)} className="grid size-10 place-items-center rounded-xl bg-white/8" aria-label="Close"><X className="size-4" /></button></div>
             <form onSubmit={confirmOrder} className="p-5">
-              <div className="flex items-center gap-3 rounded-2xl bg-cream-50 p-3"><div className="relative size-16 overflow-hidden rounded-xl"><Image src={selected.image} alt="" fill unoptimized className="object-cover" /></div><div className="min-w-0 flex-1"><p className="text-xs font-black">{selected.produce} · {selected.weightKg} kg</p><p className="mt-1 text-[9px] text-ink-600">{selected.grade.A}% A · {selected.shelfLife}</p></div><strong className="text-sm">Rp{(selected.weightKg * selected.pricePerKg).toLocaleString("id-ID")}</strong></div>
+              <div className="flex items-center gap-3 rounded-2xl bg-cream-50 p-3"><div className="relative size-16 overflow-hidden rounded-xl"><Image src={selected.image} alt="" fill unoptimized className="object-cover" /></div><div className="min-w-0 flex-1"><p className="text-xs font-black">{selected.produce} · {selected.weightKg} kg</p><p className="mt-1 text-[9px] text-ink-600">{selected.dominantGrade.percentage}% Grade {selected.dominantGrade.grade} · {selected.shelfLife}</p></div><strong className="text-sm">Rp{(selected.weightKg * selected.pricePerKg).toLocaleString("id-ID")}</strong></div>
               <div className="mt-5">
                 <p className="eyebrow">Delivery details</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">

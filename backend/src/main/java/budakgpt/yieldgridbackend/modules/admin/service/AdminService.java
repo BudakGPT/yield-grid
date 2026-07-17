@@ -30,6 +30,9 @@ import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.auth.enums.Role;
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
 import budakgpt.yieldgridbackend.modules.grading.repository.ProductGradingRepository;
+import budakgpt.yieldgridbackend.modules.grading.dto.GradeRecommendationResponse;
+import budakgpt.yieldgridbackend.modules.grading.dto.UpdateGradeRecommendationRequest;
+import budakgpt.yieldgridbackend.modules.grading.service.GradeRecommendationService;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderSummaryResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.UpdateOrderStatusRequest;
@@ -68,6 +71,7 @@ public class AdminService {
     private final PinataProperties pinataProperties;
     private final IntegrationProperties integrationProperties;
     private final SidecarClient sidecarClient;
+    private final GradeRecommendationService gradeRecommendationService;
     private final String gradingMode;
 
     public AdminService(
@@ -85,6 +89,7 @@ public class AdminService {
             PinataProperties pinataProperties,
             IntegrationProperties integrationProperties,
             SidecarClient sidecarClient,
+            GradeRecommendationService gradeRecommendationService,
             @Value("${app.grading.mode:openrouter}") String gradingMode
     ) {
         this.userRepository = userRepository;
@@ -101,6 +106,7 @@ public class AdminService {
         this.pinataProperties = pinataProperties;
         this.integrationProperties = integrationProperties;
         this.sidecarClient = sidecarClient;
+        this.gradeRecommendationService = gradeRecommendationService;
         this.gradingMode = gradingMode;
     }
 
@@ -168,6 +174,27 @@ public class AdminService {
     public ProductResponse updateProductStatus(UUID productId, ChangeStatusRequest request) {
         ProductResponse response = productService.changeStatus(productId, request);
         audit(currentUserService.requireUser(), "PRODUCT_STATUS_UPDATED", "PRODUCT", productId.toString(), request.status().name());
+        return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<GradeRecommendationResponse> gradeRecommendations() {
+        return gradeRecommendationService.findAll();
+    }
+
+    @Transactional
+    public GradeRecommendationResponse updateGradeRecommendation(
+            String grade,
+            UpdateGradeRecommendationRequest request
+    ) {
+        GradeRecommendationResponse response = gradeRecommendationService.update(grade, request);
+        audit(
+                currentUserService.requireUser(),
+                "GRADE_RECOMMENDATION_UPDATED",
+                "GRADE_RECOMMENDATION",
+                response.grade(),
+                response.title()
+        );
         return response;
     }
 

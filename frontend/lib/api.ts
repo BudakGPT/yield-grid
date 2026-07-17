@@ -1,4 +1,4 @@
-import type { AdminAudit, AdminOverview, AdminUser, AuthResponse, BuyerSegment, DeliveryDetails, GradingResult, Listing, Order, OrderSummary, PageResponse, ProductSummary, Profile, Role, UpdateProfileInput } from "./types";
+import type { AdminAudit, AdminOverview, AdminUser, AuthResponse, BuyerSegment, DeliveryDetails, GradeRecommendation, GradingResult, Listing, Order, OrderSummary, PageResponse, ProductSummary, Profile, Role, UpdateProfileInput } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
 export const SESSION_STORAGE_KEY = "yieldgrid-session";
@@ -208,6 +208,15 @@ export const api = {
   },
   getAdminProducts() {
     return request<PageResponse<ProductSummary>>("/api/admin/products?page=0&size=50&sort=createdAt,desc");
+  },
+  getAdminGradeRecommendations() {
+    return request<GradeRecommendation[]>("/api/admin/grade-recommendations");
+  },
+  updateAdminGradeRecommendation(grade: GradeRecommendation["grade"], title: string, description: string) {
+    return request<GradeRecommendation>(`/api/admin/grade-recommendations/${grade}`, {
+      method: "PATCH",
+      body: JSON.stringify({ title, description }),
+    });
   },
   updateAdminProductStatus(productId: string, status: ProductSummary["status"]) {
     return request<Record<string, unknown>>(`/api/admin/products/${productId}/status`, {

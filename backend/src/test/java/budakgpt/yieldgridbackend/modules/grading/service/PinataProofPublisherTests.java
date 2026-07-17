@@ -62,8 +62,9 @@ class PinataProofPublisherTests {
         publisher.publish(new GradingPersistedEvent(scanId));
 
         assertThat(grading.getIpfsCid()).isEqualTo("bafybeigdyrzt");
-        verify(pinataClient, times(2)).pinFile(photo, scanId);
+        assertThat(grading.getPhotoIpfsCid()).isEqualTo("bafy-photo");
+        verify(pinataClient).pinFile(photo, scanId);
         verify(pinataClient, times(2)).pinJson(any(), eq(scanId), eq(grading.getRubricVersion()), eq("tomato"));
-        verify(gradingRepository).save(grading);
+        verify(gradingRepository, times(2)).save(grading);
     }
 }

@@ -19,7 +19,8 @@ public record GradingResultResponse(
         @JsonProperty("model_confidence") String modelConfidence,
         @JsonProperty("photo_url") String photoUrl,
         @JsonProperty("ipfs_cid") String ipfsCid,
-        String signature
+        String signature,
+        @JsonProperty("grade_recommendations") List<GradeRecommendationResponse> gradeRecommendations
 ) {
     public record GradeDistribution(
             @JsonProperty("A") BigDecimal a,
