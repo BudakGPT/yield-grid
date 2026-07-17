@@ -46,6 +46,7 @@ pnpm-debug.log*
 *.class
 hs_err_pid*
 replay_pid*
+*.stackdump
 
 # ===== contract (Rust / Soroban) =====
 *.wasm
