@@ -33,6 +33,7 @@ class GradingServiceTests {
     private final SidecarClient sidecarClient = mock(SidecarClient.class);
     private final SecretCryptoService secretCryptoService = mock(SecretCryptoService.class);
     private final OpenRouterGradingClient openRouterClient = mock(OpenRouterGradingClient.class);
+    private final GradeRecommendationService gradeRecommendationService = mock(GradeRecommendationService.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final MockMultipartFile photo = new MockMultipartFile(
             "photo",
@@ -46,6 +47,7 @@ class GradingServiceTests {
         when(currentUserService.requireUser()).thenReturn(UserEntity.builder().role(Role.SELLER).build());
         when(uploadStorageService.store(any(), any())).thenReturn("/uploads/crate.jpg");
         when(openRouterClient.isConfigured()).thenReturn(true);
+        when(gradeRecommendationService.findAll()).thenReturn(List.of());
     }
 
     @Test
@@ -99,6 +101,7 @@ class GradingServiceTests {
                 sidecarClient,
                 secretCryptoService,
                 openRouterClient,
+                gradeRecommendationService,
                 eventPublisher,
                 mode
         );

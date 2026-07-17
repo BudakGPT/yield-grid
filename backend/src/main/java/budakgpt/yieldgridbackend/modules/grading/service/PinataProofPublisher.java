@@ -57,7 +57,12 @@ public class PinataProofPublisher {
         PinataException latest = null;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
-                String photoCid = pinataClient.pinFile(photo, grading.getId());
+                String photoCid = grading.getPhotoIpfsCid();
+                if (photoCid == null || photoCid.isBlank()) {
+                    photoCid = pinataClient.pinFile(photo, grading.getId());
+                    grading.setPhotoIpfsCid(photoCid);
+                    gradingRepository.save(grading);
+                }
                 String cid = pinataClient.pinJson(
                         proofFor(grading, photoCid),
                         grading.getId(),

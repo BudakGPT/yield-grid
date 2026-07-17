@@ -10,9 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import budakgpt.yieldgridbackend.common.security.CurrentUserService;
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.grading.dto.GradingResultResponse;
+import budakgpt.yieldgridbackend.modules.grading.dto.GradeRecommendationResponse;
 import budakgpt.yieldgridbackend.modules.grading.entity.ProductGrading;
 import budakgpt.yieldgridbackend.modules.grading.enums.BuyerSegment;
 import budakgpt.yieldgridbackend.modules.grading.repository.ProductGradingRepository;
+import budakgpt.yieldgridbackend.modules.grading.service.GradeRecommendationService;
+import budakgpt.yieldgridbackend.modules.grading.service.UploadStorageService;
 import budakgpt.yieldgridbackend.modules.listing.dto.CreateListingRequest;
 import budakgpt.yieldgridbackend.modules.listing.dto.ListingResponse;
 import budakgpt.yieldgridbackend.modules.product.entity.Product;
@@ -33,19 +36,25 @@ public class ListingService {
     private final ProductCategoryRepository categoryRepository;
     private final CurrentUserService currentUserService;
     private final YieldGridEventPublisher eventPublisher;
+    private final GradeRecommendationService gradeRecommendationService;
+    private final UploadStorageService uploadStorageService;
 
     public ListingService(
             ProductGradingRepository gradingRepository,
             ProductRepository productRepository,
             ProductCategoryRepository categoryRepository,
             CurrentUserService currentUserService,
-            YieldGridEventPublisher eventPublisher
+            YieldGridEventPublisher eventPublisher,
+            GradeRecommendationService gradeRecommendationService,
+            UploadStorageService uploadStorageService
     ) {
         this.gradingRepository = gradingRepository;
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.currentUserService = currentUserService;
         this.eventPublisher = eventPublisher;
+        this.gradeRecommendationService = gradeRecommendationService;
+        this.uploadStorageService = uploadStorageService;
     }
 
     @Transactional
@@ -81,18 +90,20 @@ public class ListingService {
 
     @Transactional(readOnly = true)
     public List<ListingResponse> findOpen(BuyerSegment segment) {
+        List<GradeRecommendationResponse> recommendations = gradeRecommendationService.findAll();
         return gradingRepository.findByProductIsNotNullOrderByCreatedAtDesc().stream()
                 .filter(grading -> grading.getProduct().getStatus() == ProductStatus.ACTIVE)
                 .filter(grading -> segment == null || grading.getSuggestedSegment() == segment)
-                .map(this::toResponse)
+                .map(grading -> toResponse(grading, recommendations))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ListingResponse> findMine() {
         UserEntity farmer = currentUserService.requireUser();
+        List<GradeRecommendationResponse> recommendations = gradeRecommendationService.findAll();
         return gradingRepository.findByFarmerIdAndProductIsNotNullOrderByCreatedAtDesc(farmer.getId()).stream()
-                .map(this::toResponse)
+                .map(grading -> toResponse(grading, recommendations))
                 .toList();
     }
 
@@ -104,6 +115,13 @@ public class ListingService {
     }
 
     public ListingResponse toResponse(ProductGrading grading) {
+        return toResponse(grading, gradeRecommendationService.findAll());
+    }
+
+    private ListingResponse toResponse(
+            ProductGrading grading,
+            List<GradeRecommendationResponse> recommendations
+    ) {
         Product product = grading.getProduct();
         return new ListingResponse(
                 product.getId(),
@@ -120,10 +138,11 @@ public class ListingService {
                         grading.getApproxDays(),
                         grading.getShelfLifeBasis()
                 ),
-                grading.getPhotoUrl(),
+                uploadStorageService.publicUrl(grading.getId()),
                 grading.getIpfsCid(),
                 grading.getRubricVersion(),
                 grading.getSuggestedSegment().name().toLowerCase(Locale.ROOT),
+                recommendations,
                 product.getStatus() == ProductStatus.ACTIVE ? "open" : product.getStatus().name().toLowerCase(Locale.ROOT)
         );
     }

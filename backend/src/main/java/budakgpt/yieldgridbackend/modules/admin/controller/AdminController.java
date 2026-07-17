@@ -19,6 +19,8 @@ import budakgpt.yieldgridbackend.modules.admin.dto.AdminUserResponse;
 import budakgpt.yieldgridbackend.modules.admin.dto.UpdateUserStatusRequest;
 import budakgpt.yieldgridbackend.modules.admin.service.AdminService;
 import budakgpt.yieldgridbackend.modules.auth.enums.Role;
+import budakgpt.yieldgridbackend.modules.grading.dto.GradeRecommendationResponse;
+import budakgpt.yieldgridbackend.modules.grading.dto.UpdateGradeRecommendationRequest;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.OrderSummaryResponse;
 import budakgpt.yieldgridbackend.modules.order.dto.UpdateOrderStatusRequest;
@@ -94,6 +96,21 @@ public class AdminController {
             @Valid @RequestBody ChangeStatusRequest request
     ) {
         return adminService.updateProductStatus(id, request);
+    }
+
+    @GetMapping("/grade-recommendations")
+    @Operation(summary = "List the marketplace recommendation for each quality grade")
+    public java.util.List<GradeRecommendationResponse> gradeRecommendations() {
+        return adminService.gradeRecommendations();
+    }
+
+    @PatchMapping("/grade-recommendations/{grade}")
+    @Operation(summary = "Update the marketplace recommendation for a quality grade")
+    public GradeRecommendationResponse updateGradeRecommendation(
+            @PathVariable String grade,
+            @Valid @RequestBody UpdateGradeRecommendationRequest request
+    ) {
+        return adminService.updateGradeRecommendation(grade, request);
     }
 
     @GetMapping("/audit")

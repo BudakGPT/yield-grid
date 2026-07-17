@@ -95,6 +95,9 @@ public class ProductGrading {
     @Column(length = 160)
     private String ipfsCid;
 
+    @Column(length = 160)
+    private String photoIpfsCid;
+
     @Column(length = 256)
     private String signature;
 

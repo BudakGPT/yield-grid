@@ -53,7 +53,7 @@ the farmer and a buyer refund using a temperature-based discount.
     </td>
     <td width="50%" valign="top">
       <b>② Review the visual grade</b><br/>
-      <sub>YieldGrid returns the A/B/reject mix, visible defects, confidence, and expected shelf life.</sub>
+      <sub>YieldGrid returns the Grade A/B/C mix, visible defects, confidence, and expected shelf life.</sub>
     </td>
   </tr>
   <tr>
@@ -83,12 +83,12 @@ the farmer and a buyer refund using a temperature-based discount.
 Five connected moves carry produce from a real crate to a completed payout:
 
 - 📷 **Grade.** A farmer submits an actual harvest photo. The grading service validates the
-  image and produces an A/B/reject distribution, visible defects, confidence, and shelf-life
+  image and produces a Grade A/B/C distribution, visible defects, confidence, and shelf-life
   estimate. Live grading uses OpenRouter; rehearsal mode provides a clearly disclosed fallback.
 - 🧺 **List.** The farmer reviews the assessment, sets a price, and publishes the saved scan as
   a marketplace listing. The photo and grading metadata can be anchored to Pinata/IPFS.
 - 🛒 **Match.** Buyers compare quality, remaining shelf life, location, quantity, and direct
-  price. Produce with short life or higher reject share is routed toward processing buyers;
+  price. Produce with short life or a higher Grade C share is routed toward processing buyers;
   stronger Grade A lots are suited to retail.
 - 🔐 **Protect.** Checkout can provision custodial Stellar wallets and lock YGIDR in a Soroban
   escrow keyed to the order. The browser never receives the sidecar's service credentials.
@@ -200,7 +200,7 @@ sequenceDiagram
 
     alt GRADING_MODE = openrouter
         API->>VLM: Image + crop-specific JSON schema
-        VLM-->>API: Grade mix, defects, shelf life, confidence
+        VLM-->>API: Grade A/B/C mix, defects, shelf life, confidence
     else GRADING_MODE = rehearsal
         API->>API: Load disclosed rehearsal values
     end

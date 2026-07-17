@@ -37,13 +37,18 @@ public class UploadStorageService {
             Files.createDirectories(uploadDirectory);
             String fileName = scanId + EXTENSIONS.get(photo.getContentType());
             Files.copy(photo.getInputStream(), uploadDirectory.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
-            return ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/uploads/")
-                    .path(fileName)
-                    .toUriString();
+            return publicUrl(scanId);
         } catch (IOException exception) {
             throw new IllegalStateException("Could not store the scan photo", exception);
         }
+    }
+
+    public String publicUrl(UUID scanId) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/scans/")
+                .path(scanId.toString())
+                .path("/photo")
+                .toUriString();
     }
 
     public Optional<Path> findStoredPhoto(UUID scanId) {

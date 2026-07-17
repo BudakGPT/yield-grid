@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Activity, BadgeCheck, Box, CircleAlert, LoaderCircle, RefreshCw, ShieldCheck, ShoppingCart, Users } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
-import type { AdminAudit, AdminOverview, AdminUser, OrderSummary, ProductSummary } from "@/lib/types";
+import type { AdminAudit, AdminOverview, AdminUser, GradeRecommendation, OrderSummary, ProductSummary } from "@/lib/types";
 import { useAuth } from "./auth-provider";
 
 const orderTransitions: Record<string, string[]> = {
@@ -33,6 +33,7 @@ export function AdminDashboard() {
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [audit, setAudit] = useState<AdminAudit[]>([]);
+  const [gradeRecommendations, setGradeRecommendations] = useState<GradeRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -41,18 +42,20 @@ export function AdminDashboard() {
     if (showLoader) setLoading(true);
     setError("");
     try {
-      const [nextOverview, nextUsers, nextOrders, nextProducts, nextAudit] = await Promise.all([
+      const [nextOverview, nextUsers, nextOrders, nextProducts, nextAudit, nextGradeRecommendations] = await Promise.all([
         api.getAdminOverview(),
         api.getAdminUsers(),
         api.getAdminOrders(),
         api.getAdminProducts(),
         api.getAdminAudit(),
+        api.getAdminGradeRecommendations(),
       ]);
       setOverview(nextOverview);
       setUsers(nextUsers.content);
       setOrders(nextOrders.content);
       setProducts(nextProducts.content);
       setAudit(nextAudit.content);
+      setGradeRecommendations(nextGradeRecommendations);
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : "Could not load central control data");
     } finally {
@@ -93,6 +96,10 @@ export function AdminDashboard() {
     { label: "Visual gradings", value: metrics?.totalGradings ?? 0, detail: "Recorded scans", icon: BadgeCheck },
   ];
 
+  function editGradeRecommendation(grade: GradeRecommendation["grade"], field: "title" | "description", value: string) {
+    setGradeRecommendations((current) => current.map((item) => item.grade === grade ? { ...item, [field]: value } : item));
+  }
+
   return (
     <div className="space-y-5">
       <section className="grid-field rounded-[1.6rem] p-5 text-white sm:p-6">
@@ -115,6 +122,18 @@ export function AdminDashboard() {
         </div>
       </section>
 
+      <section className="panel p-5">
+        <div className="flex items-center gap-3"><BadgeCheck className="size-5 text-forest-700" /><div><p className="eyebrow">Quality routing control</p><h3 className="mt-1 text-lg font-black">Grade recommendations</h3><p className="mt-1 text-[9px] text-ink-600">These suggestions appear on every marketplace listing. Internal IDs remain hidden from buyers.</p></div></div>
+        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+          {gradeRecommendations.map((item) => <article key={item.grade} className="rounded-2xl bg-cream-50 p-4">
+            <div className="flex items-center justify-between"><span className="grid size-9 place-items-center rounded-xl bg-forest-950 text-sm font-black text-white">{item.grade}</span><StatusPill status={`GRADE_${item.grade}`} /></div>
+            <label className="mt-4 block text-[8px] font-black uppercase text-ink-600">Recommendation title<input value={item.title} maxLength={120} onChange={(event) => editGradeRecommendation(item.grade, "title", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-white px-3 text-[9px] font-bold text-forest-950 outline-none focus:ring-2 focus:ring-leaf-400" /></label>
+            <label className="mt-3 block text-[8px] font-black uppercase text-ink-600">Routing guidance<textarea value={item.description} maxLength={500} rows={4} onChange={(event) => editGradeRecommendation(item.grade, "description", event.target.value)} className="mt-2 w-full rounded-xl bg-white p-3 text-[9px] leading-5 text-forest-950 outline-none focus:ring-2 focus:ring-leaf-400" /></label>
+            <button disabled={busy === `grade-${item.grade}` || !item.title.trim() || !item.description.trim()} onClick={() => void control(`grade-${item.grade}`, () => api.updateAdminGradeRecommendation(item.grade, item.title, item.description))} className="mt-3 min-h-11 w-full rounded-xl bg-forest-950 text-[9px] font-black text-white disabled:opacity-40">{busy === `grade-${item.grade}` ? "Saving..." : `Save Grade ${item.grade}`}</button>
+          </article>)}
+        </div>
+      </section>
+
       <section className="panel overflow-hidden">
         <div className="flex items-center gap-3 border-b border-forest-950/8 p-5"><Users className="size-5 text-forest-700" /><div><p className="eyebrow">Access control</p><h3 className="mt-1 text-lg font-black">User accounts</h3></div></div>
         <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-[9px]"><thead className="bg-cream-50 text-ink-600"><tr><th className="p-3">User</th><th>Role</th><th>Verification</th><th>Wallet</th><th>Last login</th><th className="pr-3 text-right">Control</th></tr></thead><tbody>{users.map((user) => <tr key={user.id} className="border-t border-forest-950/6"><td className="p-3"><strong className="block text-[10px]">{user.fullName}</strong><span className="text-ink-600">{user.email}</span></td><td><StatusPill status={user.role} /></td><td>{user.emailVerified ? "Verified" : "Pending"}</td><td>{user.walletReady ? "Ready" : "Pending"}</td><td>{dateTime(user.lastLoginAt)}</td><td className="pr-3 text-right"><button disabled={busy === `user-${user.id}` || user.id === session.user.id} onClick={() => void control(`user-${user.id}`, () => api.updateAdminUserStatus(user.id, !user.enabled))} className={`rounded-lg px-3 py-2 font-black disabled:opacity-35 ${user.enabled ? "bg-clay-100 text-clay-500" : "bg-leaf-100 text-forest-700"}`}>{user.enabled ? "Disable" : "Enable"}</button></td></tr>)}</tbody></table></div>
@@ -126,7 +145,7 @@ export function AdminDashboard() {
         <div className="panel overflow-hidden"><div className="border-b border-forest-950/8 p-5"><p className="eyebrow">Marketplace control</p><h3 className="mt-1 text-lg font-black">Products and listings</h3></div><div className="divide-y divide-forest-950/6">{products.map((product) => <div key={product.id} className="flex items-center gap-3 p-4"><div className="min-w-0 flex-1"><p className="truncate text-[10px] font-black">{product.name}</p><p className="mt-1 text-[8px] text-ink-600">{product.sellerName} · {product.stock} {product.unit}</p></div><select aria-label={`Status for ${product.name}`} value={product.status} disabled={busy === `product-${product.id}`} onChange={(event) => void control(`product-${product.id}`, () => api.updateAdminProductStatus(product.id, event.target.value as ProductSummary["status"]))} className="min-h-9 rounded-lg bg-cream-100 px-2 text-[8px] font-black outline-none">{productStatuses.map((status) => <option key={status}>{status}</option>)}</select></div>)}{products.length === 0 && <p className="p-5 text-[9px] text-ink-600">No products recorded.</p>}</div></div>
       </section>
 
-      <section className="panel p-5"><div className="flex items-center gap-3"><ShieldCheck className="size-5 text-forest-700" /><div><p className="eyebrow">Audit trail</p><h3 className="mt-1 text-lg font-black">Administrator activity</h3></div></div><div className="mt-4 space-y-2">{audit.map((event) => <div key={event.id} className="flex flex-col gap-2 rounded-xl bg-cream-50 p-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[9px] font-black">{event.action.replaceAll("_", " ")}</p><p className="mt-1 text-[8px] text-ink-600">{event.actorEmail} · {event.targetType} {event.targetId}</p></div><time className="text-[8px] text-ink-600">{dateTime(event.createdAt)}</time></div>)}{audit.length === 0 && <p className="text-[9px] text-ink-600">No administrator actions yet.</p>}</div></section>
+      <section className="panel p-5"><div className="flex items-center gap-3"><ShieldCheck className="size-5 text-forest-700" /><div><p className="eyebrow">Audit trail</p><h3 className="mt-1 text-lg font-black">Administrator activity</h3></div></div><div className="mt-4 space-y-2">{audit.map((event) => <div key={event.id} className="flex flex-col gap-2 rounded-xl bg-cream-50 p-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[9px] font-black">{event.action.replaceAll("_", " ")}</p><p className="mt-1 text-[8px] text-ink-600">{event.actorEmail} · {event.targetType.replaceAll("_", " ")}</p></div><time className="text-[8px] text-ink-600">{dateTime(event.createdAt)}</time></div>)}{audit.length === 0 && <p className="text-[9px] text-ink-600">No administrator actions yet.</p>}</div></section>
     </div>
   );
 }
