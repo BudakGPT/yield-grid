@@ -1,5 +1,6 @@
 package budakgpt.yieldgridbackend.modules.order.repository;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Collection;
 import java.util.UUID;
@@ -12,12 +13,15 @@ import org.springframework.data.repository.query.Param;
 
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.order.entity.Order;
+import budakgpt.yieldgridbackend.modules.order.enums.EscrowStatus;
 import budakgpt.yieldgridbackend.modules.order.enums.OrderStatus;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
     Page<Order> findByBuyer(UserEntity buyer, Pageable pageable);
 
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
+
+    boolean existsByEscrowStatusIn(Collection<EscrowStatus> statuses);
 
     Optional<Order> findByOrderNumber(String orderNumber);
 

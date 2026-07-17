@@ -111,6 +111,22 @@ class AuthControllerIntegrationTests {
     }
 
     @Test
+    void registerRejectsPrivilegedRole() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fullName": "Sneaky Admin",
+                                  "email": "sneaky-admin@example.com",
+                                  "password": "password123",
+                                  "role": "ADMIN"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
     void registerRejectsValidationErrors() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

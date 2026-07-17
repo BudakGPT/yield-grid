@@ -18,12 +18,14 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import budakgpt.yieldgridbackend.common.response.ErrorResponse;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
+import budakgpt.yieldgridbackend.modules.auth.exception.PrivilegedRoleRegistrationException;
 import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsException;
 import budakgpt.yieldgridbackend.modules.auth.exception.SupabaseAuthException;
 import budakgpt.yieldgridbackend.modules.cart.exception.CartItemNotFoundException;
 import budakgpt.yieldgridbackend.modules.cart.exception.CartNotFoundException;
 import budakgpt.yieldgridbackend.modules.cart.exception.EmptyCartCheckoutException;
 import budakgpt.yieldgridbackend.modules.cart.exception.UnauthorizedCartAccessException;
+import budakgpt.yieldgridbackend.modules.demo.exception.ActiveEscrowResetException;
 import budakgpt.yieldgridbackend.modules.order.exception.InsufficientStockException;
 import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderRequestException;
 import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderStatusTransitionException;
@@ -120,6 +122,14 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return error(HttpStatus.UNAUTHORIZED, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(PrivilegedRoleRegistrationException.class)
+    public ResponseEntity<ErrorResponse> handlePrivilegedRoleRegistration(
+            PrivilegedRoleRegistrationException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.FORBIDDEN, exception.getMessage(), request);
     }
 
     @ExceptionHandler(SupabaseAuthException.class)
@@ -221,6 +231,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception exception, HttpServletRequest request) {
         logger.error("Unexpected application error", exception);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request);
+    }
+
+    @ExceptionHandler(ActiveEscrowResetException.class)
+    public ResponseEntity<ErrorResponse> handleActiveEscrowReset(
+            ActiveEscrowResetException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.CONFLICT, exception.getMessage(), request);
     }
 
     @ExceptionHandler(SidecarUnavailableException.class)

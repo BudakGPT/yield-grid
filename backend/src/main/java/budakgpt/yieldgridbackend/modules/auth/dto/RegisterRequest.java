@@ -25,7 +25,8 @@ public record RegisterRequest(
         String password,
 
         @NotNull(message = "Role is required")
-        @Schema(example = "BUYER", allowableValues = {"BUYER", "SELLER", "ADMIN", "MODERATOR", "SUPPORT"})
+        @Schema(example = "BUYER", allowableValues = {"BUYER", "SELLER"},
+                description = "Public registration accepts only BUYER or SELLER")
         Role role
 ) {
 }
