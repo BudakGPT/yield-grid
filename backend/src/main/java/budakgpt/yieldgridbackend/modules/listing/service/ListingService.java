@@ -21,6 +21,7 @@ import budakgpt.yieldgridbackend.modules.product.entity.ProductImage;
 import budakgpt.yieldgridbackend.modules.product.enums.ProductStatus;
 import budakgpt.yieldgridbackend.modules.product.enums.QualityGrade;
 import budakgpt.yieldgridbackend.modules.product.enums.Unit;
+import budakgpt.yieldgridbackend.modules.product.exception.ProductNotFoundException;
 import budakgpt.yieldgridbackend.modules.product.repository.ProductCategoryRepository;
 import budakgpt.yieldgridbackend.modules.product.repository.ProductRepository;
 import budakgpt.yieldgridbackend.modules.ws.YieldGridEventPublisher;
@@ -67,8 +68,6 @@ public class ListingService {
                 .stock(grading.getEstWeightKg().setScale(0, RoundingMode.DOWN).intValueExact())
                 .qualityGrade(toQualityGrade(grading))
                 .unit(Unit.KG)
-                .originProvince("West Java")
-                .originCity("Pangalengan")
                 .status(ProductStatus.ACTIVE)
                 .build();
         product.addImage(ProductImage.builder().imageUrl(grading.getPhotoUrl()).displayOrder(0).build());
@@ -89,6 +88,21 @@ public class ListingService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ListingResponse> findMine() {
+        UserEntity farmer = currentUserService.requireUser();
+        return gradingRepository.findByFarmerIdAndProductIsNotNullOrderByCreatedAtDesc(farmer.getId()).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ListingResponse findById(java.util.UUID id) {
+        return gradingRepository.findByProductId(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+    }
+
     public ListingResponse toResponse(ProductGrading grading) {
         Product product = grading.getProduct();
         return new ListingResponse(
@@ -96,6 +110,7 @@ public class ListingService {
                 grading.getId(),
                 grading.getFarmer().getId(),
                 grading.getFarmer().getFullName(),
+                grading.getFarmer().getLocation(),
                 grading.getProduceType(),
                 product.getPrice(),
                 grading.getEstWeightKg(),

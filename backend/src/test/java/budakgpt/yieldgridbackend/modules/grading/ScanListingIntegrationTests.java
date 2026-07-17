@@ -3,6 +3,7 @@ package budakgpt.yieldgridbackend.modules.grading;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -33,7 +34,7 @@ import budakgpt.yieldgridbackend.modules.product.entity.ProductCategory;
 import budakgpt.yieldgridbackend.modules.product.repository.ProductCategoryRepository;
 import budakgpt.yieldgridbackend.modules.product.repository.ProductRepository;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.grading.mode=rehearsal")
 @AutoConfigureMockMvc
 @Import(TestSupabaseAuthConfiguration.class)
 class ScanListingIntegrationTests {
@@ -80,6 +81,13 @@ class ScanListingIntegrationTests {
     void farmerScanCreatesBuyerVisibleListingWithFrozenShape() throws Exception {
         String farmerToken = register("farmer-scan@example.com", "SELLER");
         String buyerToken = register("buyer-scan@example.com", "BUYER");
+        mockMvc.perform(patch("/api/profile/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(farmerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "location": "Bandung Regency, West Java" }
+                                """))
+                .andExpect(status().isOk());
         MockMultipartFile photo = new MockMultipartFile(
                 "photo",
                 "crate.jpg",
@@ -103,7 +111,7 @@ class ScanListingIntegrationTests {
         JsonNode scan = objectMapper.readTree(scanResult.getResponse().getContentAsString());
         UUID scanId = UUID.fromString(scan.get("scan_id").asText());
 
-        mockMvc.perform(post("/api/listings")
+        MvcResult listingResult = mockMvc.perform(post("/api/listings")
                         .header(HttpHeaders.AUTHORIZATION, bearer(farmerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -111,8 +119,11 @@ class ScanListingIntegrationTests {
                                 """.formatted(scanId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.scan_id").value(scanId.toString()))
+                .andExpect(jsonPath("$.farmer_location").value("Bandung Regency, West Java"))
                 .andExpect(jsonPath("$.suggested_segment").value("retail"))
-                .andExpect(jsonPath("$.status").value("open"));
+                .andExpect(jsonPath("$.status").value("open"))
+                .andReturn();
+        UUID listingId = UUID.fromString(objectMapper.readTree(listingResult.getResponse().getContentAsString()).get("id").asText());
 
         mockMvc.perform(get("/api/listings")
                         .param("status", "open")
@@ -121,6 +132,17 @@ class ScanListingIntegrationTests {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].unit_price").value(18000))
                 .andExpect(jsonPath("$[0].rubric_version").value("tomato-codex-cxs293-v1"));
+
+        mockMvc.perform(get("/api/listings/mine")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(farmerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(listingId.toString()));
+
+        mockMvc.perform(get("/api/listings/{id}", listingId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(buyerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.farmer_location").value("Bandung Regency, West Java"));
     }
 
     private String register(String email, String role) throws Exception {

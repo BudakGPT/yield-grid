@@ -2,6 +2,7 @@ package budakgpt.yieldgridbackend.modules.demo;
 
 import java.util.Map;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/demo")
+@ConditionalOnProperty(name = "app.demo.enabled", havingValue = "true")
 public class DemoController {
     private final DemoService demoService;
 

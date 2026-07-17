@@ -3,17 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FlaskConical, Home, Leaf, LogIn, LogOut, RadioTower, ScanLine, ShoppingBasket, Truck, UserRound } from "lucide-react";
+import { Home, Leaf, LogIn, LogOut, ScanLine, ShoppingBasket, Truck, UserRound } from "lucide-react";
 import { useDemo } from "./demo-provider";
 import { useAuth } from "./auth-provider";
 
 const navigation = [
   { href: "/", label: "Home", icon: Home },
   { href: "/marketplace", label: "Buyer market", icon: ShoppingBasket },
-  { href: "/farmer", label: "Farmer PWA", icon: Leaf },
+  { href: "/farmer", label: "Farmer workspace", icon: Leaf },
   { href: "/order", label: "Active order", icon: Truck },
-  { href: "/demo", label: "Demo console", icon: FlaskConical },
 ];
+
+const orderStatusLabels = {
+  open: "Open",
+  escrowed: "Payment protected",
+  in_transit: "In transit",
+  breached: "Temperature issue",
+  settled: "Paid",
+};
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -34,16 +41,13 @@ export function SiteHeader() {
               <Link key={href} href={href} className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-[11px] font-bold transition ${active ? "bg-white text-forest-950 shadow-lg" : "text-white/58 hover:bg-white/8 hover:text-white"}`}>
                 <Icon className="size-3.5" />
                 <span>{label}</span>
-                {href === "/order" && state.status !== "open" && <span className="rounded-md bg-leaf-400/15 px-1.5 py-0.5 text-[8px] text-leaf-400">{state.status.replace("_", " ")}</span>}
+                {href === "/order" && state.status !== "open" && <span className="rounded-md bg-leaf-400/15 px-1.5 py-0.5 text-[8px] text-leaf-400">{orderStatusLabels[state.status]}</span>}
               </Link>
             );
           })}
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-2 text-[9px] font-bold text-white/65 xl:flex">
-            <RadioTower className="size-3.5 text-leaf-400" /> API + WebSocket live
-          </div>
           {session ? <div className="flex items-center gap-1"><Link href="/profile" aria-label="Open profile" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/8 px-3 text-[10px] font-extrabold text-white sm:px-4"><UserRound className="size-4" /><span className="hidden sm:inline">{session.user.fullName}</span></Link><button onClick={logout} aria-label="Sign out" title="Sign out" className="grid size-10 place-items-center rounded-xl text-white/55 transition hover:bg-white/8 hover:text-white"><LogOut className="size-4" /></button></div> : <Link href="/auth" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/8 px-3 text-[10px] font-extrabold text-white sm:px-4"><LogIn className="size-4" /><span className="hidden sm:inline">Sign in</span></Link>}
           <Link href={session?.user.role === "BUYER" ? "/marketplace" : "/farmer"} className="inline-flex h-10 items-center gap-2 rounded-xl bg-leaf-400 px-3 text-[10px] font-extrabold text-forest-950 transition hover:-translate-y-0.5 hover:bg-[#c8e372] sm:px-4">
             <ScanLine className="size-4" /><span className="hidden sm:inline">{session?.user.role === "BUYER" ? "Browse crates" : "Scan crate"}</span>

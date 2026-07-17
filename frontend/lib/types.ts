@@ -9,7 +9,7 @@ export type MarketplaceListing = {
   produce: string;
   produceType: ProduceType;
   farmer: string;
-  location: string;
+  location: string | null;
   image: string;
   weightKg: number;
   pricePerKg: number;
@@ -17,7 +17,6 @@ export type MarketplaceListing = {
   shelfLife: string;
   shelfBand: "short" | "medium" | "long";
   segment: BuyerSegment;
-  reputation: number;
   codex: string;
   fresh?: boolean;
   ipfsCid?: string | null;
@@ -82,6 +81,7 @@ export type Listing = {
   scan_id: string;
   farmer_id: string;
   farmer_name: string;
+  farmer_location: string | null;
   produce_type: "tomato" | "banana";
   unit_price: number;
   est_weight_kg: number;
@@ -116,7 +116,18 @@ export type Order = {
   subtotal: number;
   shippingFee: number;
   totalAmount: number;
+  recipientName: string;
+  recipientPhone: string;
+  province: string | null;
+  city: string | null;
+  district: string | null;
+  postalCode: string | null;
+  fullAddress: string;
+  notes: string | null;
   items: OrderItem[];
+  orderedAt: string;
+  updatedAt: string;
+  completedAt: string | null;
   escrowStatus: EscrowStatus;
   farmerId: string | null;
   farmerName: string | null;
@@ -127,8 +138,39 @@ export type Order = {
   lastTemperatureC: number | null;
 };
 
+export type DeliveryDetails = {
+  recipientName: string;
+  recipientPhone: string;
+  province: string;
+  city: string;
+  district: string;
+  postalCode: string;
+  fullAddress: string;
+  notes: string;
+};
+
+export type OrderSummary = {
+  id: string;
+  orderNumber: string;
+  buyerId: string;
+  buyerName: string;
+  status: string;
+  paymentMethod: string;
+  totalAmount: number;
+  itemCount: number;
+  orderedAt: string;
+};
+
+export type PageResponse<T> = {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+};
+
 export type YieldGridEvent = {
-  event: "listing.created" | "order.created" | "order.escrow_locked" | "transit.update" | "transit.breach" | "order.settled";
+  event: "listing.created" | "order.created" | "order.escrow_locked" | "order.status_updated" | "transit.update" | "transit.breach" | "order.settled";
   order_id: string;
   data: Record<string, unknown> | Listing;
   timestamp: string;

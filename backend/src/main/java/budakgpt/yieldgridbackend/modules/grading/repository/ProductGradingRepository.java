@@ -14,4 +14,6 @@ public interface ProductGradingRepository extends JpaRepository<ProductGrading, 
     Optional<ProductGrading> findByProductId(UUID productId);
 
     List<ProductGrading> findByProductIsNotNullOrderByCreatedAtDesc();
+
+    List<ProductGrading> findByFarmerIdAndProductIsNotNullOrderByCreatedAtDesc(UUID farmerId);
 }

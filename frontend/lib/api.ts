@@ -1,4 +1,4 @@
-import type { AuthResponse, BuyerSegment, GradingResult, Listing, Order, Profile, Role, UpdateProfileInput } from "./types";
+import type { AuthResponse, BuyerSegment, DeliveryDetails, GradingResult, Listing, Order, OrderSummary, PageResponse, Profile, Role, UpdateProfileInput } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
 const SESSION_KEY = "yieldgrid-session";
@@ -44,8 +44,8 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
   } catch (cause) {
     throw new ApiError(
       cause instanceof TypeError
-        ? "Cannot reach the YieldGrid API. Make sure the backend is running on port 8083."
-        : "YieldGrid API request failed",
+        ? "YieldGrid is temporarily unavailable. Please try again."
+        : "The request could not be completed.",
       0,
     );
   }
@@ -95,7 +95,7 @@ export const api = {
         cache: "no-store",
       });
     } catch {
-      throw new ApiError("Cannot reach the YieldGrid API. Make sure the backend is running on port 8083.", 0);
+      throw new ApiError("YieldGrid is temporarily unavailable. Please try again.", 0);
     }
     if (!response.ok) {
       const body = (await response.json().catch(() => null)) as { message?: string } | null;
@@ -117,25 +117,36 @@ export const api = {
     if (segment) query.set("segment", segment.toUpperCase());
     return request<Listing[]>(`/api/listings?${query}`);
   },
-  createOrder(listingId: string, quantity: number) {
+  getMyListings() {
+    return request<Listing[]>("/api/listings/mine");
+  },
+  getListing(listingId: string) {
+    return request<Listing>(`/api/listings/${listingId}`);
+  },
+  createOrder(listingId: string, quantity: number, delivery: DeliveryDetails) {
     return request<Order>("/api/orders", {
       method: "POST",
       body: JSON.stringify({
         items: [{ productId: listingId, quantity }],
         paymentMethod: "YGIDR_ESCROW",
-        recipientName: "Chef Rosa",
-        recipientPhone: "08123456789",
-        province: "DKI Jakarta",
-        city: "Jakarta Selatan",
-        district: "Kebayoran Baru",
-        postalCode: "12110",
-        fullAddress: "YieldGrid demo delivery checkpoint",
-        notes: "Verify crate QR on delivery",
+        ...delivery,
       }),
     });
   },
+  getMyOrders() {
+    return request<PageResponse<OrderSummary>>("/api/orders/my?page=0&size=1&sort=orderedAt,desc");
+  },
+  getSellerOrders() {
+    return request<PageResponse<OrderSummary>>("/api/orders/seller?page=0&size=1&sort=orderedAt,desc");
+  },
   getOrder(orderId: string) {
     return request<Order>(`/api/orders/${orderId}`);
+  },
+  updateOrderStatus(orderId: string, status: "PROCESSING" | "SHIPPED") {
+    return request<Order>(`/api/orders/${orderId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
   },
   deliver(orderId: string, qrPayload?: string) {
     return request<Order>(`/api/orders/${orderId}/deliver`, {

@@ -12,6 +12,7 @@ public record ListingResponse(
         @JsonProperty("scan_id") UUID scanId,
         @JsonProperty("farmer_id") UUID farmerId,
         @JsonProperty("farmer_name") String farmerName,
+        @JsonProperty("farmer_location") String farmerLocation,
         @JsonProperty("produce_type") String produceType,
         @JsonProperty("unit_price") BigDecimal unitPrice,
         @JsonProperty("est_weight_kg") BigDecimal estWeightKg,

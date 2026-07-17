@@ -5,14 +5,13 @@ export function toMarketplaceListing(listing: Listing): MarketplaceListing {
   const gradeB = Math.round(listing.grade_distribution.B * 100);
   const gradeReject = Math.max(0, 100 - gradeA - gradeB);
   const cropName = listing.produce_type === "tomato" ? "Tomato crate" : "Banana crate";
-  const codexClass = gradeA >= gradeB ? "A = Codex Extra / Class I" : "B = Codex Class II";
-  const codexNumber = listing.produce_type === "tomato" ? "CXS 293" : "CXS 205";
+  const qualitySummary = gradeA >= gradeB ? "Mostly Grade A produce" : "Mostly Grade B produce";
   return {
     id: listing.id,
     produce: cropName,
     produceType: listing.produce_type,
     farmer: listing.farmer_name,
-    location: "Pangalengan, West Java",
+    location: listing.farmer_location,
     image: listing.photo_url,
     weightKg: listing.est_weight_kg,
     pricePerKg: listing.unit_price,
@@ -20,8 +19,7 @@ export function toMarketplaceListing(listing: Listing): MarketplaceListing {
     shelfLife: `about ${listing.est_shelf_life.approx_days} days`,
     shelfBand: listing.est_shelf_life.band,
     segment: listing.suggested_segment,
-    reputation: 96,
-    codex: `${codexClass} · ${codexNumber}`,
+    codex: qualitySummary,
     fresh: true,
     ipfsCid: listing.ipfs_cid,
   };

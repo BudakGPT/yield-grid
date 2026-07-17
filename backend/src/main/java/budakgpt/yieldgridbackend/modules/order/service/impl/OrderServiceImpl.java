@@ -153,13 +153,14 @@ public class OrderServiceImpl implements OrderService {
             order.setFarmerSeller(order.getItems().getFirst().getSeller());
         }
         Order saved = orderRepository.saveAndFlush(order);
-        eventPublisher.publish("order.created", saved.getId(), Map.of("status", saved.getEscrowStatus().name()));
         if (request.paymentMethod() == PaymentMethod.YGIDR_ESCROW) {
             settlementService.lockEscrow(saved);
             saved.setStatus(OrderStatus.PAID);
             saved = orderRepository.save(saved);
         }
-        return orderMapper.toResponse(saved);
+        OrderResponse response = orderMapper.toResponse(saved);
+        eventPublisher.publish("order.created", saved.getId(), orderEventData(saved));
+        return response;
     }
 
     @Override
@@ -176,7 +177,9 @@ public class OrderServiceImpl implements OrderService {
         settlementService.settle(order);
         order.setStatus(OrderStatus.COMPLETED);
         order.setCompletedAt(Instant.now());
-        return orderMapper.toResponse(orderRepository.save(order));
+        OrderResponse response = orderMapper.toResponse(orderRepository.save(order));
+        eventPublisher.publish("order.status_updated", order.getId(), orderEventData(order));
+        return response;
     }
 
     @Override
@@ -217,7 +220,9 @@ public class OrderServiceImpl implements OrderService {
         if (request.status() == OrderStatus.COMPLETED) {
             order.setCompletedAt(Instant.now());
         }
-        return orderMapper.toResponse(orderRepository.save(order));
+        OrderResponse response = orderMapper.toResponse(orderRepository.save(order));
+        eventPublisher.publish("order.status_updated", order.getId(), orderEventData(order));
+        return response;
     }
 
     @Override
@@ -335,6 +340,17 @@ public class OrderServiceImpl implements OrderService {
 
     private boolean isAdmin(UserEntity user) {
         return user.getRole() == Role.ADMIN;
+    }
+
+    private Map<String, Object> orderEventData(Order order) {
+        UUID farmerId = order.getFarmerSeller() != null
+                ? order.getFarmerSeller().getId()
+                : order.getItems().getFirst().getSeller().getId();
+        return Map.of(
+                "buyer_id", order.getBuyer().getId(),
+                "farmer_id", farmerId,
+                "status", order.getStatus().name()
+        );
     }
 
     private UserEntity currentUser() {

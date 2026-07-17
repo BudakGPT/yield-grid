@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,7 +32,6 @@ import budakgpt.yieldgridbackend.modules.stellar.SidecarClient;
 
 @Service
 public class GradingService {
-    private static final Logger logger = LoggerFactory.getLogger(GradingService.class);
     private static final Set<String> SUPPORTED_IMAGE_TYPES = Set.of(
             "image/jpeg",
             "image/png",
@@ -162,12 +159,7 @@ public class GradingService {
         if (!openRouterClient.isConfigured()) {
             throw new IllegalStateException("OpenRouter is not configured; set OPENROUTER_API_KEY");
         }
-        try {
-            return new GradingAttempt(liveValues(openRouterClient.grade(photo, crop), crop), "openrouter", false);
-        } catch (OpenRouterGradingException exception) {
-            logger.warn("OpenRouter grading failed; using disclosed rehearsal cache: {}", exception.getMessage());
-            return new GradingAttempt(rehearsalValues(crop), "rehearsal-cache", true);
-        }
+        return new GradingAttempt(liveValues(openRouterClient.grade(photo, crop), crop), "openrouter", false);
     }
 
     private GradingValues liveValues(VlmGradingResult result, String crop) {
