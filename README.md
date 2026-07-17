@@ -503,28 +503,28 @@ yield-grid/
       <a href="https://github.com/KareemMalik">
         <img src="https://avatars.githubusercontent.com/u/179297121?v=4" width="80px" alt="Malik Alifan Kareem"/>
         <br/><sub><b>Malik Alifan Kareem</b></sub>
-        <br/><sub>UI/UX Designer</sub>
+        <br/><sub>Developer</sub>
       </a>
     </td>
     <td align="center">
       <a href="https://github.com/helvenix">
         <img src="https://avatars.githubusercontent.com/u/109453997?v=4" width="80px" alt="Helven Marcia"/>
         <br/><sub><b>Helven Marcia</b></sub>
-        <br/><sub>Fullstack Developer</sub>
+        <br/><sub>Developer</sub>
       </a>
     </td>
     <td align="center">
       <a href="https://github.com/haekalhdn">
         <img src="https://avatars.githubusercontent.com/u/178357458?v=4" width="80px" alt="Haekal Handrian"/>
         <br/><sub><b>Haekal Handrian</b></sub>
-        <br/><sub>Deployment</sub>
+        <br/><sub>Developer</sub>
       </a>
     </td>
     <td align="center">
       <a href="https://github.com/erikwilbert">
         <img src="https://avatars.githubusercontent.com/u/198186768?v=4" width="80px" alt="Erik Wilbert"/>
         <br/><sub><b>Erik Wilbert</b></sub>
-        <br/><sub>Fullstack Developer</sub>
+        <br/><sub>Developer</sub>
       </a>
     </td>
   </tr>
