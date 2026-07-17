@@ -132,24 +132,44 @@ public class AuthServiceImpl implements AuthService {
                 .or(() -> userRepository.findByEmail(normalizedEmail))
                 .orElse(null);
 
-        if (user == null) {
+        // The Supabase trigger inserts a user_profiles row as soon as auth.users is
+        // created, defaulting role to BUYER because the provider carries no role. So an
+        // OAuth user already exists here before we have ever asked farmer-or-buyer.
+        // Only our own login paths write lastLoginAt, so a null value means this account
+        // has never completed a sign-in with us and still holds the placeholder role.
+        boolean firstSignIn = user == null || user.getLastLoginAt() == null;
+
+        if (firstSignIn) {
             // First OAuth sign-in: the provider does not carry our farmer/buyer role, so it must be chosen.
             Role role = request.role();
             if (role != Role.BUYER && role != Role.SELLER) {
                 throw new RoleSelectionRequiredException();
             }
-            String fullName = identity.fullName() != null ? identity.fullName() : normalizedEmail.split("@")[0];
-            user = UserEntity.builder()
-                    .id(identity.id())
-                    .fullName(fullName)
-                    .email(normalizedEmail)
-                    .role(role)
-                    .enabled(true)
-                    .emailVerified(identity.emailVerified())
-                    .avatarUrl(identity.avatarUrl())
-                    .build();
+            if (user == null) {
+                String fullName = identity.fullName() != null ? identity.fullName() : normalizedEmail.split("@")[0];
+                user = UserEntity.builder()
+                        .id(identity.id())
+                        .fullName(fullName)
+                        .email(normalizedEmail)
+                        .role(role)
+                        .enabled(true)
+                        .emailVerified(identity.emailVerified())
+                        .avatarUrl(identity.avatarUrl())
+                        .build();
+            } else {
+                if (!user.getEnabled()) {
+                    throw new InvalidCredentialsException();
+                }
+                // Replace the trigger's placeholder role with the one actually chosen.
+                user.setRole(role);
+                user.setEmail(normalizedEmail);
+                user.setEmailVerified(identity.emailVerified());
+                if (user.getAvatarUrl() == null && identity.avatarUrl() != null) {
+                    user.setAvatarUrl(identity.avatarUrl());
+                }
+            }
 
-            if (sidecarClient.isEnabled()) {
+            if (sidecarClient.isEnabled() && user.getStellarPublicKey() == null) {
                 String walletRole = role == Role.BUYER ? "buyer" : "farmer";
                 SidecarClient.ProvisionResponse wallet = sidecarClient.provision(walletRole);
                 user.setStellarPublicKey(wallet.publicKey());
