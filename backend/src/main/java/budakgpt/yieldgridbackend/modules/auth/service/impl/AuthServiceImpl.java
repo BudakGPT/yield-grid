@@ -2,8 +2,9 @@ package budakgpt.yieldgridbackend.modules.auth.service.impl;
 
 import java.time.Instant;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
 import budakgpt.yieldgridbackend.modules.auth.service.AuthService;
+import budakgpt.yieldgridbackend.modules.auth.service.SupabaseAuthClient;
+import budakgpt.yieldgridbackend.modules.auth.service.SupabaseAuthClient.SupabaseIdentity;
 import budakgpt.yieldgridbackend.modules.auth.dto.AuthResponse;
 import budakgpt.yieldgridbackend.modules.auth.dto.LoginRequest;
 import budakgpt.yieldgridbackend.modules.auth.dto.RegisterRequest;
@@ -23,26 +24,26 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final UserMapper userMapper;
     private final SidecarClient sidecarClient;
     private final SecretCryptoService secretCryptoService;
+    private final SupabaseAuthClient supabaseAuthClient;
 
     public AuthServiceImpl(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
             JwtService jwtService,
             UserMapper userMapper,
             SidecarClient sidecarClient,
-            SecretCryptoService secretCryptoService
+            SecretCryptoService secretCryptoService,
+            SupabaseAuthClient supabaseAuthClient
     ) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.userMapper = userMapper;
         this.sidecarClient = sidecarClient;
         this.secretCryptoService = secretCryptoService;
+        this.supabaseAuthClient = supabaseAuthClient;
     }
 
     @Override
@@ -57,14 +58,25 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new UserAlreadyExistsException(normalizedEmail);
         }
+        if (request.role() != budakgpt.yieldgridbackend.modules.auth.enums.Role.BUYER
+                && request.role() != budakgpt.yieldgridbackend.modules.auth.enums.Role.SELLER) {
+            throw new IllegalArgumentException("Public signup role must be BUYER or SELLER");
+        }
+
+        SupabaseIdentity identity = supabaseAuthClient.signUp(
+                normalizedEmail,
+                request.password(),
+                request.fullName().trim(),
+                request.role()
+        );
 
         UserEntity user = UserEntity.builder()
+                .id(identity.id())
                 .fullName(request.fullName().trim())
-                .email(normalizedEmail)
-                .password(passwordEncoder.encode(request.password()))
+                .email(identity.email())
                 .role(request.role())
                 .enabled(true)
-                .emailVerified(false)
+                .emailVerified(identity.emailVerified())
                 .build();
 
         if (sidecarClient.isEnabled()) {
@@ -83,13 +95,17 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse login(LoginRequest request) {
         String normalizedEmail = normalizeEmail(request.email());
-        UserEntity user = userRepository.findByEmail(normalizedEmail)
+        SupabaseIdentity identity = supabaseAuthClient.signIn(normalizedEmail, request.password());
+        UserEntity user = userRepository.findById(identity.id())
+                .or(() -> userRepository.findByEmail(normalizedEmail))
                 .orElseThrow(InvalidCredentialsException::new);
 
-        if (!user.getEnabled() || !passwordEncoder.matches(request.password(), user.getPassword())) {
+        if (!user.getEnabled()) {
             throw new InvalidCredentialsException();
         }
 
+        user.setEmail(identity.email());
+        user.setEmailVerified(identity.emailVerified());
         user.setLastLoginAt(Instant.now());
         UserEntity savedUser = userRepository.save(user);
         String token = jwtService.generateToken(savedUser);

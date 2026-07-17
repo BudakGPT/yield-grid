@@ -20,6 +20,7 @@ import budakgpt.yieldgridbackend.common.response.ErrorResponse;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
 import budakgpt.yieldgridbackend.modules.auth.exception.PrivilegedRoleRegistrationException;
 import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsException;
+import budakgpt.yieldgridbackend.modules.auth.exception.SupabaseAuthException;
 import budakgpt.yieldgridbackend.modules.cart.exception.CartItemNotFoundException;
 import budakgpt.yieldgridbackend.modules.cart.exception.CartNotFoundException;
 import budakgpt.yieldgridbackend.modules.cart.exception.EmptyCartCheckoutException;
@@ -129,6 +130,15 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return error(HttpStatus.FORBIDDEN, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(SupabaseAuthException.class)
+    public ResponseEntity<ErrorResponse> handleSupabaseAuth(
+            SupabaseAuthException exception,
+            HttpServletRequest request
+    ) {
+        logger.warn("Supabase Auth request failed: {}", exception.getMessage());
+        return error(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage(), request);
     }
 
     @ExceptionHandler(JwtException.class)

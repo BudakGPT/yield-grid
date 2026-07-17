@@ -1,6 +1,7 @@
 package budakgpt.yieldgridbackend.modules.grading.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.util.Map;
@@ -70,7 +71,7 @@ class OpenRouterGradingClientTests {
         JsonNode response = objectMapper.createObjectNode().set("choices", objectMapper.createArrayNode()
                 .add(objectMapper.createObjectNode().set("message", objectMapper.createObjectNode().put("content", content))));
 
-        VlmGradingResult result = client.parseResponse(response);
+        VlmGradingResult result = client.parseResponse(objectMapper.writeValueAsString(response));
 
         assertThat(result.detectedProduceType()).isEqualTo("tomato");
         assertThat(result.gradeDistribution().a()).isEqualByComparingTo("0.68");
@@ -85,6 +86,13 @@ class OpenRouterGradingClientTests {
                 .contains("written for green bananas")
                 .contains("not to claim official certification of ripe fruit")
                 .contains("visible flesh damage");
+    }
+
+    @Test
+    void rejectsEmptyProviderResponse() {
+        assertThatThrownBy(() -> client().parseResponse(null))
+                .isInstanceOf(OpenRouterGradingException.class)
+                .hasMessageContaining("empty response");
     }
 
     private OpenRouterGradingClient client() {

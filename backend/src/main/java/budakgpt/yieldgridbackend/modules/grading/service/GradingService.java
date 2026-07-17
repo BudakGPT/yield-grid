@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,7 @@ public class GradingService {
     private final OpenRouterGradingClient openRouterClient;
     private final ObjectMapper objectMapper;
     private final String gradingMode;
+    private final ApplicationEventPublisher eventPublisher;
 
     public GradingService(
             ProductGradingRepository gradingRepository,
@@ -56,6 +58,7 @@ public class GradingService {
             SidecarClient sidecarClient,
             SecretCryptoService secretCryptoService,
             OpenRouterGradingClient openRouterClient,
+            ApplicationEventPublisher eventPublisher,
             @Value("${app.grading.mode:rehearsal}") String gradingMode
     ) {
         this.gradingRepository = gradingRepository;
@@ -64,6 +67,7 @@ public class GradingService {
         this.sidecarClient = sidecarClient;
         this.secretCryptoService = secretCryptoService;
         this.openRouterClient = openRouterClient;
+        this.eventPublisher = eventPublisher;
         this.objectMapper = new ObjectMapper().findAndRegisterModules();
         this.gradingMode = gradingMode;
     }
@@ -112,6 +116,7 @@ public class GradingService {
                 .build();
         grading.setSignature(signIfAvailable(grading));
         gradingRepository.save(grading);
+        eventPublisher.publishEvent(new GradingPersistedEvent(grading.getId()));
         return new GradingOutcome(toResponse(grading), attempt.source(), attempt.cacheUsed());
     }
 

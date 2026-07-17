@@ -19,16 +19,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import budakgpt.yieldgridbackend.support.TestSupabaseAuthConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.auth.enums.Role;
-import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
+import budakgpt.yieldgridbackend.modules.auth.security.JwtService;
 import budakgpt.yieldgridbackend.modules.cart.repository.CartRepository;
 import budakgpt.yieldgridbackend.modules.order.repository.OrderRepository;
 import budakgpt.yieldgridbackend.modules.product.entity.ProductCategory;
@@ -37,6 +39,7 @@ import budakgpt.yieldgridbackend.modules.product.repository.ProductRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestSupabaseAuthConfiguration.class)
 class ProductControllerIntegrationTests {
 
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
@@ -46,6 +49,9 @@ class ProductControllerIntegrationTests {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private JwtService jwtService;
 
     @Autowired
     private OrderRepository orderRepository;
@@ -58,9 +64,6 @@ class ProductControllerIntegrationTests {
 
     @Autowired
     private ProductCategoryRepository categoryRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     private ProductCategory vegetables;
 
@@ -250,18 +253,16 @@ class ProductControllerIntegrationTests {
     }
 
     private String register(String email, String role) throws Exception {
-        Role parsedRole = Role.valueOf(role);
-        // Public signup only accepts BUYER/SELLER; seed privileged roles directly, then log in.
-        if (parsedRole != Role.BUYER && parsedRole != Role.SELLER) {
-            userRepository.save(UserEntity.builder()
+        if (!"BUYER".equals(role) && !"SELLER".equals(role)) {
+            UserEntity profile = userRepository.save(UserEntity.builder()
+                    .id(UUID.randomUUID())
                     .fullName(role + " User")
-                    .email(email.trim().toLowerCase())
-                    .password(passwordEncoder.encode("password123"))
-                    .role(parsedRole)
+                    .email(email)
+                    .role(Role.valueOf(role))
                     .enabled(true)
-                    .emailVerified(false)
+                    .emailVerified(true)
                     .build());
-            return login(email);
+            return jwtService.generateToken(profile);
         }
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -274,21 +275,6 @@ class ProductControllerIntegrationTests {
                                 }
                                 """.formatted(role, email, role)))
                 .andExpect(status().isCreated())
-                .andReturn();
-        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
-        return json.get("accessToken").asText();
-    }
-
-    private String login(String email) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "email": "%s",
-                                  "password": "password123"
-                                }
-                                """.formatted(email)))
-                .andExpect(status().isOk())
                 .andReturn();
         JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
         return json.get("accessToken").asText();

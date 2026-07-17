@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import budakgpt.yieldgridbackend.config.OpenRouterProperties;
+import budakgpt.yieldgridbackend.config.PinataProperties;
+import budakgpt.yieldgridbackend.modules.auth.config.SupabaseAuthProperties;
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.auth.repository.UserRepository;
 import budakgpt.yieldgridbackend.modules.cart.repository.CartRepository;
@@ -41,6 +43,8 @@ public class DemoService {
     private final JdbcTemplate jdbcTemplate;
     private final OpenRouterProperties openRouterProperties;
     private final String gradingMode;
+    private final PinataProperties pinataProperties;
+    private final SupabaseAuthProperties supabaseAuthProperties;
 
     public DemoService(
             OrderRepository orderRepository,
@@ -53,6 +57,8 @@ public class DemoService {
             YieldGridEventPublisher eventPublisher,
             JdbcTemplate jdbcTemplate,
             OpenRouterProperties openRouterProperties,
+            PinataProperties pinataProperties,
+            SupabaseAuthProperties supabaseAuthProperties,
             @Value("${app.grading.mode:rehearsal}") String gradingMode
     ) {
         this.orderRepository = orderRepository;
@@ -65,6 +71,8 @@ public class DemoService {
         this.eventPublisher = eventPublisher;
         this.jdbcTemplate = jdbcTemplate;
         this.openRouterProperties = openRouterProperties;
+        this.pinataProperties = pinataProperties;
+        this.supabaseAuthProperties = supabaseAuthProperties;
         this.gradingMode = gradingMode;
     }
 
@@ -143,6 +151,8 @@ public class DemoService {
         if ("openrouter".equalsIgnoreCase(gradingMode)) {
             result.put("grading_model", openRouterProperties.model());
         }
+        result.put("auth", supabaseAuthProperties.configured() ? "supabase" : "unconfigured");
+        result.put("pinata", pinataProperties.configured() ? "ready" : "unconfigured");
         SidecarClient.HealthResponse sidecar = sidecarClient.health();
         result.put("stellar", sidecar.status());
         result.put("contract_id", sidecar.escrowContractId());

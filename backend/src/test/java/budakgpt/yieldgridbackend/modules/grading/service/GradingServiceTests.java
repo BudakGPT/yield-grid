@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.context.ApplicationEventPublisher;
 
 import budakgpt.yieldgridbackend.common.security.CurrentUserService;
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
@@ -30,6 +31,7 @@ class GradingServiceTests {
     private final SidecarClient sidecarClient = mock(SidecarClient.class);
     private final SecretCryptoService secretCryptoService = mock(SecretCryptoService.class);
     private final OpenRouterGradingClient openRouterClient = mock(OpenRouterGradingClient.class);
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final MockMultipartFile photo = new MockMultipartFile(
             "photo",
             "crate.jpg",
@@ -97,6 +99,7 @@ class GradingServiceTests {
                 sidecarClient,
                 secretCryptoService,
                 openRouterClient,
+                eventPublisher,
                 mode
         );
     }

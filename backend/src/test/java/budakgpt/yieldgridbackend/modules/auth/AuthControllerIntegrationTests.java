@@ -3,8 +3,10 @@ package budakgpt.yieldgridbackend.modules.auth;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -22,9 +25,11 @@ import budakgpt.yieldgridbackend.modules.cart.repository.CartRepository;
 import budakgpt.yieldgridbackend.modules.order.repository.OrderRepository;
 import budakgpt.yieldgridbackend.modules.product.repository.ProductCategoryRepository;
 import budakgpt.yieldgridbackend.modules.product.repository.ProductRepository;
+import budakgpt.yieldgridbackend.support.TestSupabaseAuthConfiguration;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestSupabaseAuthConfiguration.class)
 class AuthControllerIntegrationTests {
 
     @Autowired
@@ -52,6 +57,15 @@ class AuthControllerIntegrationTests {
         productRepository.deleteAll();
         categoryRepository.deleteAll();
         userRepository.deleteAll();
+    }
+
+    @Test
+    void authPreflightAllowsFrontendOrigin() throws Exception {
+        mockMvc.perform(options("/api/auth/signup")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000"));
     }
 
     @Test

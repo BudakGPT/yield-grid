@@ -34,6 +34,23 @@ export type User = {
   walletReady: boolean;
 };
 
+export type Profile = User & {
+  phoneNumber: string | null;
+  location: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpdateProfileInput = {
+  fullName?: string;
+  phoneNumber?: string;
+  location?: string;
+  bio?: string;
+  avatarUrl?: string;
+};
+
 export type AuthResponse = {
   accessToken: string;
   tokenType: "Bearer";

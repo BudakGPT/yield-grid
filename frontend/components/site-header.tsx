@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FlaskConical, Home, Leaf, LogIn, LogOut, RadioTower, ScanLine, ShoppingBasket, Truck } from "lucide-react";
+import { FlaskConical, Home, Leaf, LogIn, LogOut, RadioTower, ScanLine, ShoppingBasket, Truck, UserRound } from "lucide-react";
 import { useDemo } from "./demo-provider";
 import { useAuth } from "./auth-provider";
 
@@ -44,7 +44,7 @@ export function SiteHeader() {
           <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-2 text-[9px] font-bold text-white/65 xl:flex">
             <RadioTower className="size-3.5 text-leaf-400" /> API + WebSocket live
           </div>
-          {session ? <button onClick={logout} className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/8 px-3 text-[10px] font-extrabold text-white sm:px-4"><LogOut className="size-4" /><span className="hidden sm:inline">{session.user.fullName}</span></button> : <Link href="/auth" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/8 px-3 text-[10px] font-extrabold text-white sm:px-4"><LogIn className="size-4" /><span className="hidden sm:inline">Sign in</span></Link>}
+          {session ? <div className="flex items-center gap-1"><Link href="/profile" aria-label="Open profile" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/8 px-3 text-[10px] font-extrabold text-white sm:px-4"><UserRound className="size-4" /><span className="hidden sm:inline">{session.user.fullName}</span></Link><button onClick={logout} aria-label="Sign out" title="Sign out" className="grid size-10 place-items-center rounded-xl text-white/55 transition hover:bg-white/8 hover:text-white"><LogOut className="size-4" /></button></div> : <Link href="/auth" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/8 px-3 text-[10px] font-extrabold text-white sm:px-4"><LogIn className="size-4" /><span className="hidden sm:inline">Sign in</span></Link>}
           <Link href={session?.user.role === "BUYER" ? "/marketplace" : "/farmer"} className="inline-flex h-10 items-center gap-2 rounded-xl bg-leaf-400 px-3 text-[10px] font-extrabold text-forest-950 transition hover:-translate-y-0.5 hover:bg-[#c8e372] sm:px-4">
             <ScanLine className="size-4" /><span className="hidden sm:inline">{session?.user.role === "BUYER" ? "Browse crates" : "Scan crate"}</span>
           </Link>
