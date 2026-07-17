@@ -1,9 +1,13 @@
 package budakgpt.yieldgridbackend.modules.stellar;
 
+import java.net.http.HttpClient;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -12,15 +16,24 @@ import budakgpt.yieldgridbackend.config.IntegrationProperties;
 
 @Component
 public class SidecarClient {
+    private static final Logger logger = LoggerFactory.getLogger(SidecarClient.class);
+
     private final IntegrationProperties properties;
     private final RestClient restClient;
 
     public SidecarClient(IntegrationProperties properties, RestClient.Builder builder) {
         this.properties = properties;
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(properties.sidecarTimeout())
+                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(properties.sidecarTimeout());
         this.restClient = builder
                 .baseUrl(properties.sidecarUrl())
+                .requestFactory(requestFactory)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.sidecarToken())
                 .build();
+        logger.info("Settlement sidecar configured: enabled={}, url={}", properties.sidecarEnabled(), properties.sidecarUrl());
     }
 
     public boolean isEnabled() {

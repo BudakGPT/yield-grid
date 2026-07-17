@@ -18,6 +18,11 @@ import {
 const app = express();
 app.use(express.json());
 
+// Keep Railway's deployment healthcheck independent from Stellar RPC health.
+app.get("/health/live", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 // Shared-secret bearer guard for the internal backend-to-sidecar channel.
 function auth(req: Request, res: Response, next: NextFunction): void {
   const header = req.header("authorization") ?? "";
@@ -151,6 +156,6 @@ app.post(
   }),
 );
 
-export const httpServer = app.listen(CONFIG.port, () => {
-  console.log("settlement sidecar listening on :" + CONFIG.port);
+export const httpServer = app.listen(CONFIG.port, CONFIG.host, () => {
+  console.log(`settlement sidecar listening on ${CONFIG.host}:${CONFIG.port}`);
 });

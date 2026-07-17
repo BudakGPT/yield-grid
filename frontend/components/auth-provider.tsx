@@ -1,14 +1,14 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { api, readSession, writeSession } from "@/lib/api";
+import { api, invalidateSession, readSession, SESSION_INVALIDATED_EVENT, SESSION_STORAGE_KEY, sessionExpiresAt, writeSession } from "@/lib/api";
 import type { AuthResponse, Profile, Role, UpdateProfileInput } from "@/lib/types";
 
 type AuthContextValue = {
   session: AuthResponse | null;
   ready: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (fullName: string, email: string, password: string, role: Role) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthResponse>;
+  signup: (fullName: string, email: string, password: string, role: Role) => Promise<AuthResponse>;
   oauthLogin: (accessToken: string, role?: Role) => Promise<AuthResponse>;
   updateProfile: (profile: UpdateProfileInput) => Promise<Profile>;
   logout: () => void;
@@ -22,15 +22,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    queueMicrotask(() => {
+    const syncSession = () => {
       if (!active) return;
       setSession(readSession());
       setReady(true);
-    });
+    };
+    const syncStoredSession = (event: StorageEvent) => {
+      if (event.key === SESSION_STORAGE_KEY || event.key === null) syncSession();
+    };
+    queueMicrotask(syncSession);
+    window.addEventListener("storage", syncStoredSession);
+    window.addEventListener(SESSION_INVALIDATED_EVENT, syncSession);
     return () => {
       active = false;
+      window.removeEventListener("storage", syncStoredSession);
+      window.removeEventListener(SESSION_INVALIDATED_EVENT, syncSession);
     };
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    const expiresAt = sessionExpiresAt(session);
+    if (expiresAt === null) return;
+    const remaining = expiresAt - Date.now() - 5_000;
+    if (remaining <= 0) {
+      invalidateSession();
+      return;
+    }
+    const timer = window.setTimeout(invalidateSession, Math.min(remaining, 2_147_483_647));
+    return () => window.clearTimeout(timer);
+  }, [session]);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,
@@ -39,11 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const next = await api.login(email, password);
       writeSession(next);
       setSession(next);
+      return next;
     },
     signup: async (fullName, email, password, role) => {
       const next = await api.signup(fullName, email, password, role);
       writeSession(next);
       setSession(next);
+      return next;
     },
     oauthLogin: async (accessToken, role) => {
       const next = await api.oauthLogin(accessToken, role);

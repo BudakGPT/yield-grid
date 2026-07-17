@@ -24,6 +24,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
 
     Page<Product> findByQualityGrade(QualityGrade qualityGrade, Pageable pageable);
 
+    long countByStatus(ProductStatus status);
+
     @Query("""
             select p from Product p
             where lower(p.name) like lower(concat('%', :keyword, '%'))

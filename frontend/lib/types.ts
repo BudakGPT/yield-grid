@@ -9,7 +9,7 @@ export type MarketplaceListing = {
   produce: string;
   produceType: ProduceType;
   farmer: string;
-  location: string;
+  location: string | null;
   image: string;
   weightKg: number;
   pricePerKg: number;
@@ -17,7 +17,6 @@ export type MarketplaceListing = {
   shelfLife: string;
   shelfBand: "short" | "medium" | "long";
   segment: BuyerSegment;
-  reputation: number;
   codex: string;
   fresh?: boolean;
   ipfsCid?: string | null;
@@ -37,6 +36,14 @@ export type User = {
 export type Profile = User & {
   phoneNumber: string | null;
   location: string | null;
+  deliveryRecipientName: string | null;
+  deliveryPhoneNumber: string | null;
+  deliveryProvince: string | null;
+  deliveryCity: string | null;
+  deliveryDistrict: string | null;
+  deliveryPostalCode: string | null;
+  deliveryAddress: string | null;
+  deliveryNotes: string | null;
   bio: string | null;
   avatarUrl: string | null;
   createdAt: string;
@@ -47,6 +54,14 @@ export type UpdateProfileInput = {
   fullName?: string;
   phoneNumber?: string;
   location?: string;
+  deliveryRecipientName?: string;
+  deliveryPhoneNumber?: string;
+  deliveryProvince?: string;
+  deliveryCity?: string;
+  deliveryDistrict?: string;
+  deliveryPostalCode?: string;
+  deliveryAddress?: string;
+  deliveryNotes?: string;
   bio?: string;
   avatarUrl?: string;
 };
@@ -82,6 +97,7 @@ export type Listing = {
   scan_id: string;
   farmer_id: string;
   farmer_name: string;
+  farmer_location: string | null;
   produce_type: "tomato" | "banana";
   unit_price: number;
   est_weight_kg: number;
@@ -116,7 +132,18 @@ export type Order = {
   subtotal: number;
   shippingFee: number;
   totalAmount: number;
+  recipientName: string;
+  recipientPhone: string;
+  province: string | null;
+  city: string | null;
+  district: string | null;
+  postalCode: string | null;
+  fullAddress: string;
+  notes: string | null;
   items: OrderItem[];
+  orderedAt: string;
+  updatedAt: string;
+  completedAt: string | null;
   escrowStatus: EscrowStatus;
   farmerId: string | null;
   farmerName: string | null;
@@ -127,8 +154,103 @@ export type Order = {
   lastTemperatureC: number | null;
 };
 
+export type DeliveryDetails = {
+  recipientName: string;
+  recipientPhone: string;
+  province: string;
+  city: string;
+  district: string;
+  postalCode: string;
+  fullAddress: string;
+  notes: string;
+};
+
+export type OrderSummary = {
+  id: string;
+  orderNumber: string;
+  buyerId: string;
+  buyerName: string;
+  status: string;
+  paymentMethod: string;
+  totalAmount: number;
+  itemCount: number;
+  orderedAt: string;
+};
+
+export type PageResponse<T> = {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+};
+
+export type AdminMetrics = {
+  totalUsers: number;
+  activeUsers: number;
+  buyers: number;
+  sellers: number;
+  totalProducts: number;
+  activeProducts: number;
+  totalOrders: number;
+  activeOrders: number;
+  totalGradings: number;
+  ordersByStatus: Record<string, number>;
+};
+
+export type AdminIntegrationStatus = {
+  name: string;
+  status: "READY" | "DEGRADED" | "DOWN" | "DISABLED" | "UNCONFIGURED";
+  detail: string;
+  latencyMs: number | null;
+};
+
+export type AdminAudit = {
+  id: string;
+  actorId: string;
+  actorEmail: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  detail: string | null;
+  createdAt: string;
+};
+
+export type AdminOverview = {
+  metrics: AdminMetrics;
+  integrations: AdminIntegrationStatus[];
+  recentActivity: AdminAudit[];
+  generatedAt: string;
+};
+
+export type AdminUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: Role;
+  enabled: boolean;
+  emailVerified: boolean;
+  walletReady: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+export type ProductSummary = {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  qualityGrade: string;
+  unit: string;
+  status: "DRAFT" | "ACTIVE" | "OUT_OF_STOCK" | "ARCHIVED";
+  category: { id: string; name: string; description: string | null; active: boolean };
+  primaryImageUrl: string | null;
+  sellerId: string;
+  sellerName: string;
+};
+
 export type YieldGridEvent = {
-  event: "listing.created" | "order.created" | "order.escrow_locked" | "transit.update" | "transit.breach" | "order.settled";
+  event: "listing.created" | "order.created" | "order.escrow_locked" | "order.status_updated" | "transit.update" | "transit.breach" | "order.settled";
   order_id: string;
   data: Record<string, unknown> | Listing;
   timestamp: string;

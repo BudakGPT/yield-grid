@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Active Order" };
 export default function OrderPage() {
   return (
     <main className="site-container py-8 md:py-12">
-      <PageIntro eyebrow="Surface 03 · Order & delivery" title="Direct trade, safely settled." description="Escrow status and proof are real product concepts; truck movement and cold-chain telemetry are persistently labeled as simulated." />
+      <PageIntro eyebrow="Order and delivery" title="Follow every step of your order." description="See payment, delivery, temperature, and farmer payout status in one place." />
       <div className="mt-6"><OrderExperience /></div>
     </main>
   );

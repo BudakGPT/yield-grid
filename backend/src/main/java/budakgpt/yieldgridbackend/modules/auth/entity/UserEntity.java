@@ -80,6 +80,30 @@ public class UserEntity {
     @Column(length = 120)
     private String location;
 
+    @Column(length = 120)
+    private String deliveryRecipientName;
+
+    @Column(length = 40)
+    private String deliveryPhoneNumber;
+
+    @Column(length = 120)
+    private String deliveryProvince;
+
+    @Column(length = 120)
+    private String deliveryCity;
+
+    @Column(length = 120)
+    private String deliveryDistrict;
+
+    @Column(length = 20)
+    private String deliveryPostalCode;
+
+    @Column(length = 1000)
+    private String deliveryAddress;
+
+    @Column(length = 1000)
+    private String deliveryNotes;
+
     @Column(length = 500)
     private String bio;
 

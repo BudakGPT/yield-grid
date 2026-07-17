@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { KeyRound, Leaf, UserRound } from "lucide-react";
 import { useAuth } from "./auth-provider";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
@@ -17,7 +16,6 @@ export function AuthScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   const continueWithGoogle = async () => {
     if (!supabase) {
@@ -39,10 +37,17 @@ export function AuthScreen() {
     setBusy(true);
     setError(null);
     try {
-      if (mode === "signup") await signup(fullName, email, password, role);
-      else await login(email, password);
-      router.replace(mode === "login" ? "/" : role === "SELLER" ? "/farmer" : "/marketplace");
-      router.refresh();
+      const authenticated = mode === "signup"
+        ? await signup(fullName, email, password, role)
+        : await login(email, password);
+      const requestedPath = new URLSearchParams(window.location.search).get("next");
+      const safePath = requestedPath?.startsWith("/") && !requestedPath.startsWith("//") ? requestedPath : null;
+      const roleHome = authenticated.user.role === "ADMIN"
+        ? "/admin"
+        : authenticated.user.role === "SELLER"
+          ? "/farmer"
+          : "/marketplace";
+      window.location.replace(safePath ?? roleHome);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Authentication failed");
     } finally {
@@ -54,9 +59,9 @@ export function AuthScreen() {
     <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[.8fr_1.2fr]">
       <div className="grid-field rounded-[1.8rem] p-7 text-white">
         <span className="grid size-12 place-items-center rounded-2xl bg-leaf-400 text-forest-950"><Leaf className="size-5" /></span>
-        <p className="eyebrow mt-12 !text-leaf-400">Custodial onboarding</p>
-        <h2 className="mt-3 text-4xl font-black tracking-[-.06em]">Normal login. Chain-ready account.</h2>
-        <p className="mt-5 text-sm leading-7 text-white/50">When Stellar integration is enabled, signup provisions XLM, a YGIDR trustline, and buyer starter funds behind this familiar flow.</p>
+        <p className="eyebrow mt-12 !text-leaf-400">Welcome to YieldGrid</p>
+        <h2 className="mt-3 text-4xl font-black tracking-[-.06em]">One account for direct trade.</h2>
+        <p className="mt-5 text-sm leading-7 text-white/50">Farmers can grade and list harvests, while buyers can purchase directly and follow each delivery.</p>
       </div>
       <form onSubmit={submit} className="panel p-7 md:p-10">
         <div className="grid grid-cols-2 gap-2">{(["signup", "login"] as const).map((value) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => { setMode(value); setError(null); }} className={`min-h-12 rounded-xl px-4 text-sm font-black ${mode === value ? "bg-forest-950 text-white" : "bg-cream-100 text-ink-600"}`}>{value === "signup" ? "Create account" : "Sign in"}</button>)}</div>

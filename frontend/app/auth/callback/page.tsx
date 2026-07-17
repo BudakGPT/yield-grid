@@ -22,7 +22,12 @@ export default function AuthCallbackPage() {
 
   const finish = useCallback(async (accessToken: string, role?: Role) => {
     const session = await oauthLogin(accessToken, role);
-    router.replace(session.user.role === "SELLER" ? "/farmer" : "/marketplace");
+    const destination = session.user.role === "ADMIN"
+      ? "/admin"
+      : session.user.role === "SELLER"
+        ? "/farmer"
+        : "/marketplace";
+    router.replace(destination);
   }, [oauthLogin, router]);
 
   const handleFailure = useCallback((reason: unknown) => {

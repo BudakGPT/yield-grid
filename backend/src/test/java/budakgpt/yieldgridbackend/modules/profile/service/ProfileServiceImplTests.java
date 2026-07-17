@@ -18,14 +18,17 @@ import budakgpt.yieldgridbackend.modules.profile.dto.ProfileResponse;
 import budakgpt.yieldgridbackend.modules.profile.dto.UpdateProfileRequest;
 import budakgpt.yieldgridbackend.modules.profile.mapper.ProfileMapper;
 import budakgpt.yieldgridbackend.modules.profile.service.impl.ProfileServiceImpl;
+import budakgpt.yieldgridbackend.modules.stellar.WalletProvisioningService;
 
 class ProfileServiceImplTests {
     private final CurrentUserService currentUserService = mock(CurrentUserService.class);
     private final UserRepository userRepository = mock(UserRepository.class);
+    private final WalletProvisioningService walletProvisioningService = mock(WalletProvisioningService.class);
     private final ProfileServiceImpl service = new ProfileServiceImpl(
             currentUserService,
             userRepository,
-            new ProfileMapper()
+            new ProfileMapper(),
+            walletProvisioningService
     );
 
     @Test
@@ -51,6 +54,14 @@ class ProfileServiceImplTests {
                 "  Farmer Updated  ",
                 " +62 812 0000 ",
                 "  Bogor, West Java ",
+                "  Warehouse Receiver ",
+                " +62 811 1111 ",
+                " West Java ",
+                " Bogor ",
+                " Cibinong ",
+                " 16911 ",
+                " Jl. Delivery No. 1 ",
+                " Call before arrival ",
                 "   ",
                 "https://images.example.com/farmer.jpg"
         ));
@@ -58,6 +69,10 @@ class ProfileServiceImplTests {
         assertThat(response.fullName()).isEqualTo("Farmer Updated");
         assertThat(response.phoneNumber()).isEqualTo("+62 812 0000");
         assertThat(response.location()).isEqualTo("Bogor, West Java");
+        assertThat(response.deliveryRecipientName()).isEqualTo("Warehouse Receiver");
+        assertThat(response.deliveryPhoneNumber()).isEqualTo("+62 811 1111");
+        assertThat(response.deliveryCity()).isEqualTo("Bogor");
+        assertThat(response.deliveryAddress()).isEqualTo("Jl. Delivery No. 1");
         assertThat(response.bio()).isNull();
         assertThat(response.avatarUrl()).isEqualTo("https://images.example.com/farmer.jpg");
         assertThat(response.email()).isEqualTo("farmer@example.com");

@@ -9,6 +9,7 @@ import budakgpt.yieldgridbackend.config.IntegrationProperties;
 import budakgpt.yieldgridbackend.config.OpenRouterProperties;
 import budakgpt.yieldgridbackend.config.PinataProperties;
 import budakgpt.yieldgridbackend.modules.auth.config.SupabaseAuthProperties;
+import budakgpt.yieldgridbackend.modules.auth.config.AdminAccessProperties;
 
 @SpringBootApplication
 @EnableAsync
@@ -16,7 +17,8 @@ import budakgpt.yieldgridbackend.modules.auth.config.SupabaseAuthProperties;
         IntegrationProperties.class,
         OpenRouterProperties.class,
         PinataProperties.class,
-        SupabaseAuthProperties.class
+        SupabaseAuthProperties.class,
+        AdminAccessProperties.class
 })
 public class YieldgridBackendApplication {
 

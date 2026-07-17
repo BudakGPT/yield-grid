@@ -1,8 +1,10 @@
 package budakgpt.yieldgridbackend.modules.grading.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -78,17 +80,15 @@ class GradingServiceTests {
     }
 
     @Test
-    void fallsBackToDisclosedRehearsalCacheWhenProviderFails() {
+    void doesNotPersistFabricatedGradeWhenProviderFails() {
         when(openRouterClient.grade(photo, "tomato"))
                 .thenThrow(new OpenRouterGradingException("provider unavailable"));
         GradingService service = service("openrouter");
 
-        GradingService.GradingOutcome outcome = service.grade(photo, 3, "tomato");
-
-        assertThat(outcome.source()).isEqualTo("rehearsal-cache");
-        assertThat(outcome.cacheUsed()).isTrue();
-        assertThat(outcome.result().gradeDistribution().a()).isEqualByComparingTo("0.70");
-        verify(gradingRepository).save(any(ProductGrading.class));
+        assertThatThrownBy(() -> service.grade(photo, 3, "tomato"))
+                .isInstanceOf(OpenRouterGradingException.class)
+                .hasMessage("provider unavailable");
+        verify(gradingRepository, never()).save(any(ProductGrading.class));
     }
 
     private GradingService service(String mode) {

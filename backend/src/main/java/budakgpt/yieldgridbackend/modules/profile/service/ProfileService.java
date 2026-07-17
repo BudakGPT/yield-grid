@@ -7,4 +7,6 @@ public interface ProfileService {
     ProfileResponse getMyProfile();
 
     ProfileResponse updateMyProfile(UpdateProfileRequest request);
+
+    ProfileResponse provisionMyWallet();
 }
