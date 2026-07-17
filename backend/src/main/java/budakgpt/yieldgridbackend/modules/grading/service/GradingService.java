@@ -44,6 +44,7 @@ public class GradingService {
     private final SidecarClient sidecarClient;
     private final SecretCryptoService secretCryptoService;
     private final OpenRouterGradingClient openRouterClient;
+    private final GradeRecommendationService gradeRecommendationService;
     private final ObjectMapper objectMapper;
     private final String gradingMode;
     private final ApplicationEventPublisher eventPublisher;
@@ -55,6 +56,7 @@ public class GradingService {
             SidecarClient sidecarClient,
             SecretCryptoService secretCryptoService,
             OpenRouterGradingClient openRouterClient,
+            GradeRecommendationService gradeRecommendationService,
             ApplicationEventPublisher eventPublisher,
             @Value("${app.grading.mode:rehearsal}") String gradingMode
     ) {
@@ -64,6 +66,7 @@ public class GradingService {
         this.sidecarClient = sidecarClient;
         this.secretCryptoService = secretCryptoService;
         this.openRouterClient = openRouterClient;
+        this.gradeRecommendationService = gradeRecommendationService;
         this.eventPublisher = eventPublisher;
         this.objectMapper = new ObjectMapper().findAndRegisterModules();
         this.gradingMode = gradingMode;
@@ -135,7 +138,8 @@ public class GradingService {
                 grading.getModelConfidence(),
                 grading.getPhotoUrl(),
                 grading.getIpfsCid(),
-                grading.getSignature()
+                grading.getSignature(),
+                gradeRecommendationService.findAll()
         );
     }
 

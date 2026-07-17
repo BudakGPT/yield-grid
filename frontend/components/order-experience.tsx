@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AlertTriangle, ArrowRight, Check, CheckCircle2, Clock3, LockKeyhole, MapPin, PackageCheck, Phone, RefreshCw, ShieldCheck, ThermometerSnowflake, Truck, UserRound } from "lucide-react";
 import { useAuth } from "./auth-provider";
 import { useDemo } from "./demo-provider";
+import { dominantGrade } from "@/lib/listing";
 
 const statusSteps = [
   { label: "Payment protected", icon: LockKeyhole },
@@ -71,6 +72,7 @@ export function OrderExperience() {
   const destination = [order.district, order.city, order.province, order.postalCode].filter(Boolean).join(", ");
   const isSeller = session?.user.role === "SELLER";
   const canVerify = !isSeller && (["SHIPPED", "DELIVERED"].includes(order.status) || state.status === "in_transit" || state.status === "breached");
+  const listingDominantGrade = listing ? dominantGrade(listing.grade) : null;
 
   return (
     <div className="space-y-4">
@@ -87,7 +89,7 @@ export function OrderExperience() {
           <div className="mt-6 grid grid-cols-3 gap-2">{statusSteps.map((step, index) => { const active = rank >= index + 1; const Icon = step.icon; return <div key={step.label} className={`rounded-xl p-3 ${active ? "bg-leaf-100 text-forest-700" : "bg-cream-50 text-ink-600"}`}><Icon className="size-4" /><p className="mt-3 text-[8px] font-black uppercase">{step.label}</p></div>; })}</div>
           <div className={`mt-6 grid gap-4 ${listing ? "sm:grid-cols-[140px_1fr]" : ""}`}>
             {listing && <div className="relative h-36 overflow-hidden rounded-2xl"><Image src={listing.image} alt={produce} fill unoptimized className="object-cover" /></div>}
-            <div className="grid grid-cols-2 gap-2">{[["Quantity", `${quantity} kg`], ...(listing ? [["Grade A", `${listing.grade.A}%`], ["Shelf life", listing.shelfLife]] : []), ["Order total", `Rp${subtotal.toLocaleString("id-ID")}`]].map(([label, value]) => <div key={label} className="rounded-xl bg-cream-50 p-3"><p className="text-[8px] uppercase text-ink-600">{label}</p><p className="mt-2 text-xs font-black">{value}</p></div>)}</div>
+            <div className="grid grid-cols-2 gap-2">{[["Quantity", `${quantity} kg`], ...(listing && listingDominantGrade ? [["Dominant grade", `${listingDominantGrade[1]}% ${listingDominantGrade[0]}`], ["Shelf life", listing.shelfLife]] : []), ["Order total", `Rp${subtotal.toLocaleString("id-ID")}`]].map(([label, value]) => <div key={label} className="rounded-xl bg-cream-50 p-3"><p className="text-[8px] uppercase text-ink-600">{label}</p><p className="mt-2 text-xs font-black">{value}</p></div>)}</div>
           </div>
         </div>
         <aside className="grid-field rounded-[1.5rem] p-5 text-white"><span className="grid size-11 place-items-center rounded-xl bg-leaf-400 text-forest-950"><ShieldCheck className="size-5" /></span><p className="eyebrow mt-10 !text-leaf-400">Payment status</p><h3 className="mt-2 text-2xl font-black">{order.status === "COMPLETED" ? "Payment complete." : "Payment protected."}</h3><p className="mt-3 text-[10px] leading-5 text-white/45">The farmer receives payment after the buyer verifies delivery.</p><div className="mt-7 rounded-xl border border-white/9 bg-white/6 p-3"><p className="text-[8px] uppercase text-white/35">Last updated</p><p className="mt-2 text-[10px] font-black text-leaf-400">{new Date(order.updatedAt).toLocaleString("id-ID")}</p></div></aside>

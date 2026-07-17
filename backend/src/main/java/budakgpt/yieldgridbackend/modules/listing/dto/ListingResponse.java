@@ -1,11 +1,13 @@
 package budakgpt.yieldgridbackend.modules.listing.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import budakgpt.yieldgridbackend.modules.grading.dto.GradingResultResponse;
+import budakgpt.yieldgridbackend.modules.grading.dto.GradeRecommendationResponse;
 
 public record ListingResponse(
         UUID id,
@@ -22,6 +24,7 @@ public record ListingResponse(
         @JsonProperty("ipfs_cid") String ipfsCid,
         @JsonProperty("rubric_version") String rubricVersion,
         @JsonProperty("suggested_segment") String suggestedSegment,
+        @JsonProperty("grade_recommendations") List<GradeRecommendationResponse> gradeRecommendations,
         String status
 ) {
 }

@@ -3,6 +3,13 @@ export type BuyerSegment = "retail" | "wholesale" | "processing";
 export type EscrowStatus = "NONE" | "CREATED" | "ESCROWED" | "IN_TRANSIT" | "BREACHED" | "SETTLED";
 export type ProduceType = "tomato" | "banana";
 export type OrderStatus = "open" | "escrowed" | "in_transit" | "breached" | "settled";
+export type GradeLabel = "A" | "B" | "C";
+
+export type GradeRecommendation = {
+  grade: GradeLabel;
+  title: string;
+  description: string;
+};
 
 export type MarketplaceListing = {
   id: string;
@@ -13,7 +20,9 @@ export type MarketplaceListing = {
   image: string;
   weightKg: number;
   pricePerKg: number;
-  grade: { A: number; B: number; reject: number };
+  grade: Record<GradeLabel, number>;
+  dominantGrade: { grade: GradeLabel; percentage: number };
+  gradeRecommendations: GradeRecommendation[];
   shelfLife: string;
   shelfBand: "short" | "medium" | "long";
   segment: BuyerSegment;
@@ -90,6 +99,7 @@ export type GradingResult = {
   photo_url: string;
   ipfs_cid: string | null;
   signature: string | null;
+  grade_recommendations: GradeRecommendation[];
 };
 
 export type Listing = {
@@ -107,6 +117,7 @@ export type Listing = {
   ipfs_cid: string | null;
   rubric_version: string;
   suggested_segment: BuyerSegment;
+  grade_recommendations: GradeRecommendation[];
   status: string;
 };
 

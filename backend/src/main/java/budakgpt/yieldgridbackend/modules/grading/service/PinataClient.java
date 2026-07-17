@@ -26,6 +26,7 @@ public class PinataClient {
     private final PinataProperties properties;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
+    private final RestClient gatewayClient;
 
     public PinataClient(PinataProperties properties, RestClient.Builder builder) {
         this.properties = properties;
@@ -39,6 +40,10 @@ public class PinataClient {
                 .baseUrl(properties.baseUrl())
                 .requestFactory(requestFactory)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.jwt())
+                .build();
+        this.gatewayClient = RestClient.builder()
+                .baseUrl(properties.gatewayUrl())
+                .requestFactory(requestFactory)
                 .build();
     }
 
@@ -99,6 +104,25 @@ public class PinataClient {
 
     public String gatewayUrl(String cid) {
         return properties.gatewayUrl() + "/" + cid;
+    }
+
+    public String photoCidFromProof(String proofCid) {
+        try {
+            String response = gatewayClient.get()
+                    .uri("/{cid}", proofCid)
+                    .retrieve()
+                    .body(String.class);
+            if (response == null || response.isBlank()) {
+                throw new PinataException("IPFS proof is empty");
+            }
+            String photoCid = objectMapper.readTree(response).path("photo").path("cid").asText();
+            if (photoCid.isBlank()) {
+                throw new PinataException("IPFS proof contains no photo CID");
+            }
+            return photoCid;
+        } catch (RestClientException | JsonProcessingException exception) {
+            throw new PinataException("Could not resolve the photo from its IPFS proof", exception);
+        }
     }
 
     String parseCid(String response) {
