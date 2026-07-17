@@ -18,8 +18,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import budakgpt.yieldgridbackend.support.TestSupabaseAuthConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -33,6 +35,7 @@ import budakgpt.yieldgridbackend.modules.product.repository.ProductRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestSupabaseAuthConfiguration.class)
 class ScanListingIntegrationTests {
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 

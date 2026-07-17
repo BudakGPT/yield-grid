@@ -11,7 +11,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
@@ -25,7 +24,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity(name = "AuthUserEntity")
-@Table(name = "users")
+@Table(name = "user_profiles")
 @Getter
 @Setter
 @Builder
@@ -34,7 +33,6 @@ import lombok.Setter;
 public class UserEntity {
 
     @Id
-    @GeneratedValue
     private UUID id;
 
     @NotBlank
@@ -46,10 +44,6 @@ public class UserEntity {
     @NotBlank
     @Column(nullable = false, unique = true, length = 254)
     private String email;
-
-    @NotBlank
-    @Column(nullable = false)
-    private String password;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -79,4 +73,5 @@ public class UserEntity {
 
     @Column(length = 1000)
     private String stellarSecretEnc;
+
 }

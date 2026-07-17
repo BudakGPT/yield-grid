@@ -43,4 +43,7 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    systemProperty("DB_URL", "jdbc:h2:mem:yieldgrid-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE")
+    systemProperty("DB_USERNAME", "sa")
+    systemProperty("DB_PASSWORD", "")
 }
