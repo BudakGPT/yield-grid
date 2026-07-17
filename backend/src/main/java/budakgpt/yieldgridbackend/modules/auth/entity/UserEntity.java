@@ -74,4 +74,16 @@ public class UserEntity {
     @Column(length = 1000)
     private String stellarSecretEnc;
 
+    @Column(length = 32)
+    private String phoneNumber;
+
+    @Column(length = 120)
+    private String location;
+
+    @Column(length = 500)
+    private String bio;
+
+    @Column(length = 2048)
+    private String avatarUrl;
+
 }
