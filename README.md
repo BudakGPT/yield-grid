@@ -120,6 +120,28 @@ YieldGrid closes that gap:
 
 Four modules share one workflow while keeping chain secrets outside the browser:
 
+```mermaid
+flowchart LR
+    Users["Farmers · Buyers · Admin"] --> Web["Next.js 16<br/>Web & PWA"]
+    Web <-->|"REST + STOMP/WebSocket"| API["Spring Boot 4<br/>Application API"]
+
+    API <-->|"Auth + application data"| DB[("Supabase<br/>PostgreSQL")]
+    API -->|"Visual grading"| VLM["OpenRouter<br/>Vision model"]
+    API -->|"Evidence pinning"| IPFS["Pinata<br/>IPFS"]
+    API -->|"Private authenticated calls"| Sidecar["Settlement Sidecar<br/>Stellar SDK"]
+    Sidecar -->|"Signed transactions"| Escrow[["Soroban<br/>Escrow contract"]]
+    Escrow <-->|"Asset transfers"| Token[("YGIDR<br/>Stellar SAC")]
+
+    classDef client fill:#dfe79a,stroke:#173f2b,color:#173f2b
+    classDef service fill:#173f2b,stroke:#b7e23b,color:#ffffff
+    classDef external fill:#f5f0df,stroke:#7f896b,color:#173f2b
+    classDef chain fill:#3e1bdb,stroke:#b9aaff,color:#ffffff
+    class Users,Web client
+    class API,Sidecar service
+    class DB,VLM,IPFS external
+    class Escrow,Token chain
+```
+
 <table>
   <tr>
     <th align="left">Module</th>
@@ -161,36 +183,90 @@ Four modules share one workflow while keeping chain secrets outside the browser:
 
 First, **visual grading** turns evidence from the farm into a signed marketplace record:
 
-```text
- Farmer PWA                  Spring Boot                 Grading + storage
- ──────────                  ───────────                 ─────────────────
- crate photo
- crop + count ─────────────▶ validate image
-                             grade request ─────────────▶ OpenRouter / rehearsal cache
-                                                        A · B · reject
-                                                        defects · shelf life
-                             save scan ────────────────▶ PostgreSQL
-                             pin asynchronously ───────▶ Pinata / IPFS
-                             sign canonical metadata ─▶ Stellar sidecar
- grade result ◀───────────── response + source disclosure
- publish listing ──────────▶ marketplace
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Farmer
+    participant PWA as Farmer PWA
+    participant API as Spring Boot API
+    participant VLM as OpenRouter
+    participant DB as PostgreSQL
+    participant IPFS as Pinata / IPFS
+    participant Signer as Stellar Sidecar
+
+    Farmer->>PWA: Capture crate photo
+    PWA->>API: POST /api/scans<br/>photo + crop + crate count
+    API->>API: Validate file, crop, and quantity
+
+    alt GRADING_MODE = openrouter
+        API->>VLM: Image + crop-specific JSON schema
+        VLM-->>API: Grade mix, defects, shelf life, confidence
+    else GRADING_MODE = rehearsal
+        API->>API: Load disclosed rehearsal values
+    end
+
+    API->>DB: Save grading record and photo URL
+    par Evidence anchoring
+        API-)IPFS: Pin photo + signed metadata
+    and Optional authenticity signature
+        API->>Signer: Sign canonical grading payload
+        Signer-->>API: Stellar signature
+    end
+
+    API-->>PWA: Result + grading source disclosure
+    Farmer->>PWA: Review price and publish
+    PWA->>API: POST /api/listings
+    API->>DB: Save buyer-facing listing
+    API-->>PWA: Listing is live
 ```
 
 Then, **protected settlement** connects checkout to delivery condition and payout:
 
-```text
- Buyer / logistics          Backend + sidecar            Soroban escrow
- ─────────────────          ─────────────────            ──────────────
- checkout YGIDR ──────────▶ create order
-                            buyer signs create_order ───▶ YGIDR locked
- order updates ◀─────────── WebSocket events
- start transit ───────────▶ status = IN_TRANSIT
- temperature breach ──────▶ status = BREACHED
- confirm delivery ────────▶ choose settlement path
-                              no breach ────────────────▶ 100% → farmer
-                              breach ──────────────────▶ farmer − discount
-                                                        remainder → buyer
- receipt ◀──────────────── settled tx hash + discount
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Buyer
+    actor Logistics
+    participant Web as Buyer dashboard
+    participant API as Spring Boot API
+    participant Sidecar as Settlement Sidecar
+    participant Escrow as Soroban Escrow
+    actor Farmer
+
+    Buyer->>Web: Checkout with YGIDR
+    Web->>API: POST /api/orders
+    API->>Sidecar: Create escrow for order
+    Sidecar->>Escrow: create_order<br/>buyer-authorized transaction
+    Escrow->>Escrow: Lock YGIDR
+    Escrow-->>Sidecar: Transaction hash
+    Sidecar-->>API: Escrow created
+    API-->>Web: order.escrow_locked via WebSocket
+
+    Logistics->>API: Start transit
+    API-->>Web: Status = IN_TRANSIT
+    opt Cold-chain threshold exceeded
+        Logistics->>API: Report temperature breach
+        API-->>Web: Status = BREACHED
+    end
+
+    Buyer->>Web: Confirm delivery
+    Web->>API: POST /api/orders/{id}/deliver
+
+    alt Delivery without breach
+        API->>Sidecar: Confirm escrow
+        Sidecar->>Escrow: confirm_delivery
+        Escrow->>Farmer: Release 100% payment
+    else Temperature breach recorded
+        API->>API: Calculate discount basis points
+        API->>Sidecar: Settle with discount
+        Sidecar->>Escrow: settle_with_discount
+        Escrow->>Farmer: Release discounted payment
+        Escrow-->>Buyer: Refund the remainder
+    end
+
+    Escrow-->>Sidecar: Settlement transaction hash
+    Sidecar-->>API: Settlement confirmed
+    API-->>Web: order.settled + receipt via WebSocket
 ```
 
 ## Who Does What
