@@ -70,6 +70,12 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }, false);
   },
+  oauthLogin(accessToken: string, role?: Role) {
+    return request<AuthResponse>("/api/auth/oauth", {
+      method: "POST",
+      body: JSON.stringify({ accessToken, role: role ?? null }),
+    }, false);
+  },
   getMyProfile() {
     return request<Profile>("/api/profile/me");
   },

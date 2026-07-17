@@ -19,6 +19,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import budakgpt.yieldgridbackend.common.response.ErrorResponse;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
 import budakgpt.yieldgridbackend.modules.auth.exception.PrivilegedRoleRegistrationException;
+import budakgpt.yieldgridbackend.modules.auth.exception.RoleSelectionRequiredException;
 import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsException;
 import budakgpt.yieldgridbackend.modules.auth.exception.SupabaseAuthException;
 import budakgpt.yieldgridbackend.modules.cart.exception.CartItemNotFoundException;
@@ -130,6 +131,14 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return error(HttpStatus.FORBIDDEN, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(RoleSelectionRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleRoleSelectionRequired(
+            RoleSelectionRequiredException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.PRECONDITION_REQUIRED, exception.getMessage(), request);
     }
 
     @ExceptionHandler(SupabaseAuthException.class)

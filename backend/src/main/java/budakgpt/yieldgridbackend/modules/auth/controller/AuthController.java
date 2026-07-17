@@ -2,6 +2,7 @@ package budakgpt.yieldgridbackend.modules.auth.controller;
 
 import budakgpt.yieldgridbackend.modules.auth.dto.AuthResponse;
 import budakgpt.yieldgridbackend.modules.auth.dto.LoginRequest;
+import budakgpt.yieldgridbackend.modules.auth.dto.OAuthLoginRequest;
 import budakgpt.yieldgridbackend.modules.auth.dto.RegisterRequest;
 import budakgpt.yieldgridbackend.modules.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,5 +38,12 @@ public class AuthController {
     @SecurityRequirements
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/oauth")
+    @Operation(summary = "OAuth login", description = "Exchanges a Supabase OAuth session for a YieldGrid access token")
+    @SecurityRequirements
+    public ResponseEntity<AuthResponse> oauth(@Valid @RequestBody OAuthLoginRequest request) {
+        return ResponseEntity.ok(authService.oauthLogin(request));
     }
 }
