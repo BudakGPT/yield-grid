@@ -1,4 +1,4 @@
-import type { AuthResponse, BuyerSegment, GradingResult, Listing, Order, Role } from "./types";
+import type { AuthResponse, BuyerSegment, GradingResult, Listing, Order, Profile, Role, UpdateProfileInput } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
 const SESSION_KEY = "yieldgrid-session";
@@ -38,7 +38,17 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
     if (!session) throw new ApiError("Sign in to continue", 401);
     headers.set("authorization", `${session.tokenType} ${session.accessToken}`);
   }
-  const response = await fetch(`${API_URL}${path}`, { ...init, headers });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, { ...init, headers, cache: "no-store" });
+  } catch (cause) {
+    throw new ApiError(
+      cause instanceof TypeError
+        ? "Cannot reach the YieldGrid API. Make sure the backend is running on port 8083."
+        : "YieldGrid API request failed",
+      0,
+    );
+  }
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { message?: string } | null;
     throw new ApiError(body?.message ?? `Request failed (${response.status})`, response.status);
@@ -60,6 +70,15 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }, false);
   },
+  getMyProfile() {
+    return request<Profile>("/api/profile/me");
+  },
+  updateMyProfile(profile: UpdateProfileInput) {
+    return request<Profile>("/api/profile/me", {
+      method: "PATCH",
+      body: JSON.stringify(profile),
+    });
+  },
   async scan(photo: File, crateCount: number, produceType: string) {
     const form = new FormData();
     form.set("photo", photo);
@@ -67,11 +86,17 @@ export const api = {
     form.set("produce_type", produceType);
     const session = readSession();
     if (!session) throw new ApiError("Sign in as a farmer to scan", 401);
-    const response = await fetch(`${API_URL}/api/scans`, {
-      method: "POST",
-      headers: { authorization: `${session.tokenType} ${session.accessToken}` },
-      body: form,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}/api/scans`, {
+        method: "POST",
+        headers: { authorization: `${session.tokenType} ${session.accessToken}` },
+        body: form,
+        cache: "no-store",
+      });
+    } catch {
+      throw new ApiError("Cannot reach the YieldGrid API. Make sure the backend is running on port 8083.", 0);
+    }
     if (!response.ok) {
       const body = (await response.json().catch(() => null)) as { message?: string } | null;
       throw new ApiError(body?.message ?? "Scan failed", response.status);

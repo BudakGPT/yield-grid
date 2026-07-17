@@ -17,7 +17,7 @@ public class SwaggerConfig {
     private static final String SECURITY_SCHEME_NAME = "bearerAuth";
 
     @Bean
-    public OpenAPI farmLedgerOpenAPI() {
+    public OpenAPI yieldGridOpenAPI() {
         return new OpenAPI()
                 .components(new Components()
                         .addSecuritySchemes(SECURITY_SCHEME_NAME,
@@ -28,9 +28,9 @@ public class SwaggerConfig {
                                         .description("Gunakan header Authorization: Bearer <token> untuk endpoint yang dilindungi.")))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .info(new Info()
-                        .title("FarmLedger Backend API")
+                        .title("YieldGrid Backend API")
                         .version("v1.0")
-                        .description("API modul backend FarmLedger untuk autentikasi, manajemen pengguna, petani, pesanan, dan monitoring hasil panen.")
+                        .description("YieldGrid API for authentication, user profiles, visual grading, marketplace listings, orders, escrow settlement, and harvest monitoring.")
                         .contact(new Contact()
                                 .name("YieldGrid Backend Team")
                                 .email("support@yieldgrid.example.com"))

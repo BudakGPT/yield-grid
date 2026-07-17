@@ -1,6 +1,6 @@
 # YieldGrid Frontend
 
-YieldGrid is a frontend-only direct farm-to-buyer marketplace prototype. It demonstrates verified visual grading, shelf-life-aware demand matching, safe escrow UX, delivery settlement, and a clearly labeled transit simulation.
+YieldGrid is the web client for the integrated direct farm-to-buyer marketplace. It consumes the Spring Boot REST and WebSocket APIs for authentication, visual grading, listings, orders, settlement status, and the clearly labeled transit simulation.
 
 ## Stack
 
@@ -37,4 +37,4 @@ Open [http://localhost:3000](http://localhost:3000). The existing Codex preview 
 - `/verification` — progressively disclosed settlement receipt
 - `/demo` — hidden state-machine console, readiness lights, and full reset
 
-The UI follows the frozen PRD v3 frontend contracts and shares demo state across routes using browser storage. All grading results, listings, service health, IPFS identifiers, blockchain events, payments, and telemetry are demo data. There is no backend, live WebSocket, VLM call, Pinata pin, or wallet transaction in this repository yet.
+The UI follows the frozen PRD v3.1 contracts and shares live demo state across routes using the backend API, WebSocket events, and browser storage. Transit remains explicitly simulated; provider and chain readiness are reported by the demo health endpoint.

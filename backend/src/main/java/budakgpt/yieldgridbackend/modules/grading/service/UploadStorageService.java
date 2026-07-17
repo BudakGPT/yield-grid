@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +19,7 @@ public class UploadStorageService {
             "image/jpeg", ".jpg",
             "image/png", ".png",
             "image/webp", ".webp",
+            "image/gif", ".gif",
             "image/heic", ".heic"
     );
 
@@ -42,5 +44,12 @@ public class UploadStorageService {
         } catch (IOException exception) {
             throw new IllegalStateException("Could not store the scan photo", exception);
         }
+    }
+
+    public Optional<Path> findStoredPhoto(UUID scanId) {
+        return EXTENSIONS.values().stream()
+                .map(extension -> uploadDirectory.resolve(scanId + extension))
+                .filter(Files::isRegularFile)
+                .findFirst();
     }
 }

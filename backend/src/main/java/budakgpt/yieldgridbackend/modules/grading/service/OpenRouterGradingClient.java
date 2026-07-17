@@ -62,12 +62,12 @@ public class OpenRouterGradingClient {
             throw new IllegalStateException("OpenRouter is not configured; set OPENROUTER_API_KEY");
         }
         try {
-            JsonNode response = restClient.post()
+            String responseBody = restClient.post()
                     .uri("/chat/completions")
                     .body(requestFor(photo, crop))
                     .retrieve()
-                    .body(JsonNode.class);
-            return parseResponse(response);
+                    .body(String.class);
+            return parseResponse(responseBody);
         } catch (RestClientException exception) {
             throw new OpenRouterGradingException("OpenRouter request failed", exception);
         }
@@ -114,7 +114,16 @@ public class OpenRouterGradingClient {
         }
     }
 
-    VlmGradingResult parseResponse(JsonNode response) {
+    VlmGradingResult parseResponse(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            throw new OpenRouterGradingException("OpenRouter returned an empty response");
+        }
+        JsonNode response;
+        try {
+            response = objectMapper.readTree(responseBody);
+        } catch (JsonProcessingException exception) {
+            throw new OpenRouterGradingException("OpenRouter returned invalid response JSON", exception);
+        }
         JsonNode content = response == null ? null : response.at("/choices/0/message/content");
         if (content == null || !content.isTextual() || content.asText().isBlank()) {
             throw new OpenRouterGradingException("OpenRouter returned no structured grading content");
