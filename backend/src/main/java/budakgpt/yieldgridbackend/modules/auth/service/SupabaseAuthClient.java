@@ -99,6 +99,28 @@ public class SupabaseAuthClient {
         }
     }
 
+    public SupabaseUser getUser(String accessToken) {
+        requireConfigured();
+        try {
+            String response = restClient.get()
+                    .uri("/auth/v1/user")
+                    .headers(headers -> headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+                    .retrieve()
+                    .body(String.class);
+            return parseUser(response);
+        } catch (RestClientResponseException exception) {
+            if (exception.getStatusCode().is4xxClientError()) {
+                throw new InvalidCredentialsException();
+            }
+            throw new SupabaseAuthException(
+                    "Supabase token validation failed: " + providerMessage(exception.getResponseBodyAsString()),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new SupabaseAuthException("Supabase Auth is unavailable", exception);
+        }
+    }
+
     public boolean isConfigured() {
         return properties.configured();
     }
@@ -125,6 +147,42 @@ public class SupabaseAuthClient {
         }
     }
 
+    SupabaseUser parseUser(String response) {
+        try {
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode user = root.path("user");
+            if (!user.hasNonNull("id")) {
+                user = root;
+            }
+            if (!user.hasNonNull("id") || !user.hasNonNull("email")) {
+                throw new SupabaseAuthException("Supabase Auth returned no user identity");
+            }
+            boolean emailVerified = user.hasNonNull("email_confirmed_at")
+                    || user.hasNonNull("confirmed_at");
+            JsonNode metadata = user.path("user_metadata");
+            String fullName = firstNonBlank(text(metadata, "full_name"), text(metadata, "name"));
+            String avatarUrl = firstNonBlank(text(metadata, "avatar_url"), text(metadata, "picture"));
+            return new SupabaseUser(
+                    UUID.fromString(user.path("id").asText()),
+                    user.path("email").asText().trim().toLowerCase(),
+                    emailVerified,
+                    fullName,
+                    avatarUrl
+            );
+        } catch (JsonProcessingException | IllegalArgumentException exception) {
+            throw new SupabaseAuthException("Supabase Auth returned an invalid user identity", exception);
+        }
+    }
+
+    private static String text(JsonNode node, String field) {
+        JsonNode value = node.path(field);
+        return value.isTextual() && !value.asText().isBlank() ? value.asText().trim() : null;
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        return first != null ? first : second;
+    }
+
     private String providerMessage(String responseBody) {
         try {
             JsonNode body = objectMapper.readTree(responseBody);
@@ -148,5 +206,8 @@ public class SupabaseAuthClient {
     }
 
     public record SupabaseIdentity(UUID id, String email, boolean emailVerified) {
+    }
+
+    public record SupabaseUser(UUID id, String email, boolean emailVerified, String fullName, String avatarUrl) {
     }
 }
