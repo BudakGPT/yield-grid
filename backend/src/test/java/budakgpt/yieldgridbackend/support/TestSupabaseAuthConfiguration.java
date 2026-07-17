@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Primary;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
 import budakgpt.yieldgridbackend.modules.auth.service.SupabaseAuthClient;
 import budakgpt.yieldgridbackend.modules.auth.service.SupabaseAuthClient.SupabaseIdentity;
+import budakgpt.yieldgridbackend.modules.stellar.SidecarClient;
 
 @TestConfiguration(proxyBeanMethods = false)
 public class TestSupabaseAuthConfiguration {
@@ -30,6 +31,15 @@ public class TestSupabaseAuthConfiguration {
             return identity(invocation.getArgument(0));
         });
         when(client.isConfigured()).thenReturn(true);
+        return client;
+    }
+
+    @Bean
+    @Primary
+    SidecarClient testSidecarClient() {
+        SidecarClient client = mock(SidecarClient.class);
+        when(client.isEnabled()).thenReturn(false);
+        when(client.health()).thenReturn(SidecarClient.HealthResponse.unavailable());
         return client;
     }
 

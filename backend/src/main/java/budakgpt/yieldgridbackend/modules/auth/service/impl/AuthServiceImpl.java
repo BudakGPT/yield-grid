@@ -8,6 +8,7 @@ import budakgpt.yieldgridbackend.modules.auth.service.SupabaseAuthClient.Supabas
 import budakgpt.yieldgridbackend.modules.auth.dto.AuthResponse;
 import budakgpt.yieldgridbackend.modules.auth.dto.LoginRequest;
 import budakgpt.yieldgridbackend.modules.auth.dto.RegisterRequest;
+import budakgpt.yieldgridbackend.modules.auth.config.AdminAccessProperties;
 import budakgpt.yieldgridbackend.modules.auth.entity.UserEntity;
 import budakgpt.yieldgridbackend.modules.auth.exception.InvalidCredentialsException;
 import budakgpt.yieldgridbackend.modules.auth.exception.UserAlreadyExistsException;
@@ -27,6 +28,7 @@ public class AuthServiceImpl implements AuthService {
     private final SidecarClient sidecarClient;
     private final SecretCryptoService secretCryptoService;
     private final SupabaseAuthClient supabaseAuthClient;
+    private final AdminAccessProperties adminAccessProperties;
 
     public AuthServiceImpl(
             UserRepository userRepository,
@@ -34,7 +36,8 @@ public class AuthServiceImpl implements AuthService {
             UserMapper userMapper,
             SidecarClient sidecarClient,
             SecretCryptoService secretCryptoService,
-            SupabaseAuthClient supabaseAuthClient
+            SupabaseAuthClient supabaseAuthClient,
+            AdminAccessProperties adminAccessProperties
     ) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
@@ -42,6 +45,7 @@ public class AuthServiceImpl implements AuthService {
         this.sidecarClient = sidecarClient;
         this.secretCryptoService = secretCryptoService;
         this.supabaseAuthClient = supabaseAuthClient;
+        this.adminAccessProperties = adminAccessProperties;
     }
 
     @Override
@@ -101,6 +105,9 @@ public class AuthServiceImpl implements AuthService {
 
         user.setEmail(identity.email());
         user.setEmailVerified(identity.emailVerified());
+        if (adminAccessProperties.contains(identity.email())) {
+            user.setRole(budakgpt.yieldgridbackend.modules.auth.enums.Role.ADMIN);
+        }
         user.setLastLoginAt(Instant.now());
         UserEntity savedUser = userRepository.save(user);
         String token = jwtService.generateToken(savedUser);

@@ -1,6 +1,7 @@
 package budakgpt.yieldgridbackend.modules.order.repository;
 
 import java.util.Optional;
+import java.util.Collection;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -19,6 +20,10 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
     Optional<Order> findByOrderNumber(String orderNumber);
+
+    long countByStatus(OrderStatus status);
+
+    long countByStatusIn(Collection<OrderStatus> statuses);
 
     @Query("""
             select distinct o from CustomerOrder o

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { KeyRound, Leaf, UserRound } from "lucide-react";
 import { useAuth } from "./auth-provider";
 import type { Role } from "@/lib/types";
@@ -15,17 +14,22 @@ export function AuthScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      if (mode === "signup") await signup(fullName, email, password, role);
-      else await login(email, password);
-      router.replace(mode === "login" ? "/" : role === "SELLER" ? "/farmer" : "/marketplace");
-      router.refresh();
+      const authenticated = mode === "signup"
+        ? await signup(fullName, email, password, role)
+        : await login(email, password);
+      const requestedPath = new URLSearchParams(window.location.search).get("next");
+      const safePath = requestedPath?.startsWith("/") && !requestedPath.startsWith("//") ? requestedPath : null;
+      const roleHome = authenticated.user.role === "ADMIN"
+        ? "/admin"
+        : authenticated.user.role === "SELLER"
+          ? "/farmer"
+          : "/marketplace";
+      window.location.replace(safePath ?? roleHome);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Authentication failed");
     } finally {

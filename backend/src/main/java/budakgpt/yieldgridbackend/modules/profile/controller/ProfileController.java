@@ -4,6 +4,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,7 +45,7 @@ public class ProfileController {
     @PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Update my profile",
-            description = "Partially updates full name, phone number, location, bio, or avatar URL. Email, role, verification, and wallet fields are read-only."
+            description = "Partially updates identity details, the default delivery address, bio, or avatar URL. Email, role, verification, and wallet fields are read-only."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Profile updated"),
@@ -53,5 +54,19 @@ public class ProfileController {
     })
     public ProfileResponse updateMyProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return profileService.updateMyProfile(request);
+    }
+
+    @PostMapping("/wallet")
+    @Operation(
+            summary = "Set up my payment wallet",
+            description = "Provisions a Stellar payment wallet when the settlement service is available. Existing wallets are returned unchanged."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Wallet is ready"),
+            @ApiResponse(responseCode = "401", description = "Authentication is required"),
+            @ApiResponse(responseCode = "503", description = "Settlement service is unavailable")
+    })
+    public ProfileResponse provisionMyWallet() {
+        return profileService.provisionMyWallet();
     }
 }

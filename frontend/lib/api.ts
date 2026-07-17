@@ -1,7 +1,8 @@
-import type { AuthResponse, BuyerSegment, DeliveryDetails, GradingResult, Listing, Order, OrderSummary, PageResponse, Profile, Role, UpdateProfileInput } from "./types";
+import type { AdminAudit, AdminOverview, AdminUser, AuthResponse, BuyerSegment, DeliveryDetails, GradingResult, Listing, Order, OrderSummary, PageResponse, ProductSummary, Profile, Role, UpdateProfileInput } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
-const SESSION_KEY = "yieldgrid-session";
+export const SESSION_STORAGE_KEY = "yieldgrid-session";
+export const SESSION_INVALIDATED_EVENT = "yieldgrid:session-invalidated";
 
 export class ApiError extends Error {
   constructor(
@@ -14,20 +15,45 @@ export class ApiError extends Error {
 
 export function readSession(): AuthResponse | null {
   if (typeof window === "undefined") return null;
-  const saved = window.localStorage.getItem(SESSION_KEY);
+  const saved = window.localStorage.getItem(SESSION_STORAGE_KEY);
   if (!saved) return null;
   try {
-    return JSON.parse(saved) as AuthResponse;
+    const session = JSON.parse(saved) as AuthResponse;
+    const expiresAt = sessionExpiresAt(session);
+    if (expiresAt !== null && expiresAt <= Date.now() + 5_000) {
+      invalidateSession();
+      return null;
+    }
+    return session;
   } catch {
-    window.localStorage.removeItem(SESSION_KEY);
+    invalidateSession();
     return null;
   }
 }
 
 export function writeSession(session: AuthResponse | null) {
   if (typeof window === "undefined") return;
-  if (session) window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  else window.localStorage.removeItem(SESSION_KEY);
+  if (session) window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  else window.localStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
+export function sessionExpiresAt(session: AuthResponse): number | null {
+  try {
+    const payload = session.accessToken.split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const parsed = JSON.parse(atob(padded)) as { exp?: unknown };
+    return typeof parsed.exp === "number" ? parsed.exp * 1_000 : null;
+  } catch {
+    return null;
+  }
+}
+
+export function invalidateSession() {
+  if (typeof window === "undefined") return;
+  writeSession(null);
+  window.dispatchEvent(new Event(SESSION_INVALIDATED_EVENT));
 }
 
 async function request<T>(path: string, init: RequestInit = {}, authenticated = true): Promise<T> {
@@ -35,7 +61,10 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
   if (!(init.body instanceof FormData)) headers.set("content-type", "application/json");
   if (authenticated) {
     const session = readSession();
-    if (!session) throw new ApiError("Sign in to continue", 401);
+    if (!session) {
+      invalidateSession();
+      throw new ApiError("Sign in to continue", 401);
+    }
     headers.set("authorization", `${session.tokenType} ${session.accessToken}`);
   }
   let response: Response;
@@ -51,6 +80,7 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
   }
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { message?: string } | null;
+    if (authenticated && response.status === 401) invalidateSession();
     throw new ApiError(body?.message ?? `Request failed (${response.status})`, response.status);
   }
   if (response.status === 204) return undefined as T;
@@ -79,13 +109,19 @@ export const api = {
       body: JSON.stringify(profile),
     });
   },
+  provisionMyWallet() {
+    return request<Profile>("/api/profile/me/wallet", { method: "POST" });
+  },
   async scan(photo: File, crateCount: number, produceType: string) {
     const form = new FormData();
     form.set("photo", photo);
     form.set("crate_count", String(crateCount));
     form.set("produce_type", produceType);
     const session = readSession();
-    if (!session) throw new ApiError("Sign in as a farmer to scan", 401);
+    if (!session) {
+      invalidateSession();
+      throw new ApiError("Sign in as a farmer to scan", 401);
+    }
     let response: Response;
     try {
       response = await fetch(`${API_URL}/api/scans`, {
@@ -99,6 +135,7 @@ export const api = {
     }
     if (!response.ok) {
       const body = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (response.status === 401) invalidateSession();
       throw new ApiError(body?.message ?? "Scan failed", response.status);
     }
     return {
@@ -141,6 +178,39 @@ export const api = {
   },
   getOrder(orderId: string) {
     return request<Order>(`/api/orders/${orderId}`);
+  },
+  getAdminOverview() {
+    return request<AdminOverview>("/api/admin/overview");
+  },
+  getAdminUsers() {
+    return request<PageResponse<AdminUser>>("/api/admin/users?page=0&size=50&sort=createdAt,desc");
+  },
+  updateAdminUserStatus(userId: string, enabled: boolean) {
+    return request<AdminUser>(`/api/admin/users/${userId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    });
+  },
+  getAdminOrders() {
+    return request<PageResponse<OrderSummary>>("/api/admin/orders?page=0&size=50&sort=orderedAt,desc");
+  },
+  updateAdminOrderStatus(orderId: string, status: string) {
+    return request<Order>(`/api/admin/orders/${orderId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  },
+  getAdminProducts() {
+    return request<PageResponse<ProductSummary>>("/api/admin/products?page=0&size=50&sort=createdAt,desc");
+  },
+  updateAdminProductStatus(productId: string, status: ProductSummary["status"]) {
+    return request<Record<string, unknown>>(`/api/admin/products/${productId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  },
+  getAdminAudit() {
+    return request<PageResponse<AdminAudit>>("/api/admin/audit?page=0&size=50&sort=createdAt,desc");
   },
   updateOrderStatus(orderId: string, status: "PROCESSING" | "SHIPPED") {
     return request<Order>(`/api/orders/${orderId}/status`, {

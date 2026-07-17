@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DemoProvider } from "@/components/demo-provider";
 import { SiteHeader } from "@/components/site-header";
 import { AuthProvider } from "@/components/auth-provider";
+import { SessionBoundary } from "@/components/session-boundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,10 +30,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="id">
       <body>
         <AuthProvider>
-          <DemoProvider>
-            <SiteHeader />
-            <main>{children}</main>
-          </DemoProvider>
+          <SessionBoundary>
+            <DemoProvider>
+              <SiteHeader />
+              <main>{children}</main>
+            </DemoProvider>
+          </SessionBoundary>
         </AuthProvider>
       </body>
     </html>

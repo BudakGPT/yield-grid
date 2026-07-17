@@ -36,6 +36,14 @@ export type User = {
 export type Profile = User & {
   phoneNumber: string | null;
   location: string | null;
+  deliveryRecipientName: string | null;
+  deliveryPhoneNumber: string | null;
+  deliveryProvince: string | null;
+  deliveryCity: string | null;
+  deliveryDistrict: string | null;
+  deliveryPostalCode: string | null;
+  deliveryAddress: string | null;
+  deliveryNotes: string | null;
   bio: string | null;
   avatarUrl: string | null;
   createdAt: string;
@@ -46,6 +54,14 @@ export type UpdateProfileInput = {
   fullName?: string;
   phoneNumber?: string;
   location?: string;
+  deliveryRecipientName?: string;
+  deliveryPhoneNumber?: string;
+  deliveryProvince?: string;
+  deliveryCity?: string;
+  deliveryDistrict?: string;
+  deliveryPostalCode?: string;
+  deliveryAddress?: string;
+  deliveryNotes?: string;
   bio?: string;
   avatarUrl?: string;
 };
@@ -167,6 +183,70 @@ export type PageResponse<T> = {
   totalPages: number;
   number: number;
   size: number;
+};
+
+export type AdminMetrics = {
+  totalUsers: number;
+  activeUsers: number;
+  buyers: number;
+  sellers: number;
+  totalProducts: number;
+  activeProducts: number;
+  totalOrders: number;
+  activeOrders: number;
+  totalGradings: number;
+  ordersByStatus: Record<string, number>;
+};
+
+export type AdminIntegrationStatus = {
+  name: string;
+  status: "READY" | "DEGRADED" | "DOWN" | "DISABLED" | "UNCONFIGURED";
+  detail: string;
+  latencyMs: number | null;
+};
+
+export type AdminAudit = {
+  id: string;
+  actorId: string;
+  actorEmail: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  detail: string | null;
+  createdAt: string;
+};
+
+export type AdminOverview = {
+  metrics: AdminMetrics;
+  integrations: AdminIntegrationStatus[];
+  recentActivity: AdminAudit[];
+  generatedAt: string;
+};
+
+export type AdminUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: Role;
+  enabled: boolean;
+  emailVerified: boolean;
+  walletReady: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+export type ProductSummary = {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  qualityGrade: string;
+  unit: string;
+  status: "DRAFT" | "ACTIVE" | "OUT_OF_STOCK" | "ARCHIVED";
+  category: { id: string; name: string; description: string | null; active: boolean };
+  primaryImageUrl: string | null;
+  sellerId: string;
+  sellerName: string;
 };
 
 export type YieldGridEvent = {

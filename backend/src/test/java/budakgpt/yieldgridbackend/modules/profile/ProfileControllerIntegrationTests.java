@@ -81,6 +81,14 @@ class ProfileControllerIntegrationTests {
                                   "fullName": "Farmer Updated",
                                   "phoneNumber": "+62 812 3456 7890",
                                   "location": "Bogor, West Java",
+                                  "deliveryRecipientName": "Buyer Receiving",
+                                  "deliveryPhoneNumber": "+62 811 0000 1111",
+                                  "deliveryProvince": "West Java",
+                                  "deliveryCity": "Bogor",
+                                  "deliveryDistrict": "Cibinong",
+                                  "deliveryPostalCode": "16911",
+                                  "deliveryAddress": "Jl. Delivery No. 1",
+                                  "deliveryNotes": "Call before arrival",
                                   "bio": "Smallholder tomato farmer",
                                   "avatarUrl": "https://images.example.com/farmer.jpg"
                                 }
@@ -89,6 +97,9 @@ class ProfileControllerIntegrationTests {
                 .andExpect(jsonPath("$.fullName").value("Farmer Updated"))
                 .andExpect(jsonPath("$.phoneNumber").value("+62 812 3456 7890"))
                 .andExpect(jsonPath("$.location").value("Bogor, West Java"))
+                .andExpect(jsonPath("$.deliveryRecipientName").value("Buyer Receiving"))
+                .andExpect(jsonPath("$.deliveryCity").value("Bogor"))
+                .andExpect(jsonPath("$.deliveryAddress").value("Jl. Delivery No. 1"))
                 .andExpect(jsonPath("$.bio").value("Smallholder tomato farmer"))
                 .andExpect(jsonPath("$.email").value("profile@example.com"))
                 .andExpect(jsonPath("$.role").value("SELLER"));
@@ -97,7 +108,8 @@ class ProfileControllerIntegrationTests {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fullName").value("Farmer Updated"))
-                .andExpect(jsonPath("$.location").value("Bogor, West Java"));
+                .andExpect(jsonPath("$.location").value("Bogor, West Java"))
+                .andExpect(jsonPath("$.deliveryPostalCode").value("16911"));
     }
 
     @Test
@@ -127,7 +139,20 @@ class ProfileControllerIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title").value("YieldGrid Backend API"))
                 .andExpect(jsonPath("$.paths['/api/profile/me'].get").exists())
-                .andExpect(jsonPath("$.paths['/api/profile/me'].patch").exists());
+                .andExpect(jsonPath("$.paths['/api/profile/me'].patch").exists())
+                .andExpect(jsonPath("$.paths['/api/profile/me/wallet'].post").exists());
+    }
+
+    @Test
+    void walletSetupExplainsWhenSettlementServiceIsDisabled() throws Exception {
+        String token = registerSeller("wallet-profile@example.com");
+
+        mockMvc.perform(post("/api/profile/me/wallet")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.message").value(
+                        "Payment setup is unavailable; start the settlement sidecar and enable SIDECAR_ENABLED"
+                ));
     }
 
     private String registerSeller(String email) throws Exception {

@@ -16,6 +16,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
@@ -27,7 +28,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "product_gradings")
+@Table(name = "product_gradings", indexes = {
+        @Index(name = "idx_gradings_created_at", columnList = "created_at"),
+        @Index(name = "idx_gradings_farmer_created", columnList = "farmer_id, created_at")
+})
 @Getter
 @Setter
 @Builder

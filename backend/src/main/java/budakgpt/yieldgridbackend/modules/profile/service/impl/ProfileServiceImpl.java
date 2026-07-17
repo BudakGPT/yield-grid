@@ -10,21 +10,25 @@ import budakgpt.yieldgridbackend.modules.profile.dto.ProfileResponse;
 import budakgpt.yieldgridbackend.modules.profile.dto.UpdateProfileRequest;
 import budakgpt.yieldgridbackend.modules.profile.mapper.ProfileMapper;
 import budakgpt.yieldgridbackend.modules.profile.service.ProfileService;
+import budakgpt.yieldgridbackend.modules.stellar.WalletProvisioningService;
 
 @Service
 public class ProfileServiceImpl implements ProfileService {
     private final CurrentUserService currentUserService;
     private final UserRepository userRepository;
     private final ProfileMapper profileMapper;
+    private final WalletProvisioningService walletProvisioningService;
 
     public ProfileServiceImpl(
             CurrentUserService currentUserService,
             UserRepository userRepository,
-            ProfileMapper profileMapper
+            ProfileMapper profileMapper,
+            WalletProvisioningService walletProvisioningService
     ) {
         this.currentUserService = currentUserService;
         this.userRepository = userRepository;
         this.profileMapper = profileMapper;
+        this.walletProvisioningService = walletProvisioningService;
     }
 
     @Override
@@ -47,6 +51,30 @@ public class ProfileServiceImpl implements ProfileService {
         if (request.location() != null) {
             user.setLocation(normalizeOptional(request.location()));
         }
+        if (request.deliveryRecipientName() != null) {
+            user.setDeliveryRecipientName(normalizeOptional(request.deliveryRecipientName()));
+        }
+        if (request.deliveryPhoneNumber() != null) {
+            user.setDeliveryPhoneNumber(normalizeOptional(request.deliveryPhoneNumber()));
+        }
+        if (request.deliveryProvince() != null) {
+            user.setDeliveryProvince(normalizeOptional(request.deliveryProvince()));
+        }
+        if (request.deliveryCity() != null) {
+            user.setDeliveryCity(normalizeOptional(request.deliveryCity()));
+        }
+        if (request.deliveryDistrict() != null) {
+            user.setDeliveryDistrict(normalizeOptional(request.deliveryDistrict()));
+        }
+        if (request.deliveryPostalCode() != null) {
+            user.setDeliveryPostalCode(normalizeOptional(request.deliveryPostalCode()));
+        }
+        if (request.deliveryAddress() != null) {
+            user.setDeliveryAddress(normalizeOptional(request.deliveryAddress()));
+        }
+        if (request.deliveryNotes() != null) {
+            user.setDeliveryNotes(normalizeOptional(request.deliveryNotes()));
+        }
         if (request.bio() != null) {
             user.setBio(normalizeOptional(request.bio()));
         }
@@ -55,6 +83,12 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         return profileMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public ProfileResponse provisionMyWallet() {
+        return profileMapper.toResponse(walletProvisioningService.ensureProvisioned(currentUserService.requireUser()));
     }
 
     private String normalizeOptional(String value) {

@@ -31,7 +31,7 @@ const EMPTY_DELIVERY: DeliveryDetails = {
   notes: "",
 };
 
-function ListingCard({ listing, onBuy, orderActive }: { listing: MarketplaceListing; onBuy: () => void; orderActive: boolean }) {
+function ListingCard({ listing, onBuy, orderActive, canBuy }: { listing: MarketplaceListing; onBuy: () => void; orderActive: boolean; canBuy: boolean }) {
   return (
     <article className="panel group overflow-hidden p-2">
       <div className="relative h-60 overflow-hidden rounded-[1.15rem]">
@@ -57,7 +57,9 @@ function ListingCard({ listing, onBuy, orderActive }: { listing: MarketplaceList
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-leaf-100 p-3"><BadgeCheck className="size-4 shrink-0 text-forest-700" /><p className="text-[8px] font-bold leading-4 text-forest-700">{listing.codex}<br /><span className="font-normal opacity-65">Visual criteria only</span></p></div>
         {orderActive
           ? <Link href="/order" className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-forest-950 text-[10px] font-black text-white">View order <ArrowRight className="size-3.5" /></Link>
-          : <button onClick={onBuy} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-leaf-400 text-[10px] font-black text-forest-950 transition hover:-translate-y-0.5"><ShoppingBasket className="size-3.5" /> Buy direct</button>}
+          : canBuy
+            ? <button onClick={onBuy} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-leaf-400 text-[10px] font-black text-forest-950 transition hover:-translate-y-0.5"><ShoppingBasket className="size-3.5" /> Buy direct</button>
+            : <div className="mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-cream-100 text-[9px] font-black text-ink-600">Browse only · buyer account required</div>}
       </div>
     </article>
   );
@@ -65,7 +67,7 @@ function ListingCard({ listing, onBuy, orderActive }: { listing: MarketplaceList
 
 export function BuyerMarketplace() {
   const { state, lockEscrow } = useDemo();
-  const { session, ready } = useAuth();
+  const { session, ready, updateProfile } = useAuth();
   const searchParams = useSearchParams();
   const initial = searchParams.get("segment") as BuyerSegment | null;
   const [segment, setSegment] = useState<"all" | BuyerSegment>(initial && ["retail", "wholesale", "processing"].includes(initial) ? initial : "all");
@@ -73,19 +75,27 @@ export function BuyerMarketplace() {
   const [selected, setSelected] = useState<MarketplaceListing | null>(null);
   const [delivery, setDelivery] = useState<DeliveryDetails>(EMPTY_DELIVERY);
   const [locking, setLocking] = useState(false);
+  const [saveDelivery, setSaveDelivery] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (!session || session.user.role !== "BUYER") return;
+    if (!session) return;
     api.getListings()
       .then((items) => setAllListings(items.map(toMarketplaceListing)))
       .catch((reason) => setError(reason instanceof Error ? reason.message : "Could not load listings"));
+    if (session.user.role !== "BUYER") return;
     api.getMyProfile()
       .then((profile) => setDelivery((current) => ({
         ...current,
-        recipientName: current.recipientName || profile.fullName,
-        recipientPhone: current.recipientPhone || profile.phoneNumber || "",
+        recipientName: current.recipientName || profile.deliveryRecipientName || profile.fullName,
+        recipientPhone: current.recipientPhone || profile.deliveryPhoneNumber || profile.phoneNumber || "",
+        province: current.province || profile.deliveryProvince || "",
+        city: current.city || profile.deliveryCity || "",
+        district: current.district || profile.deliveryDistrict || "",
+        postalCode: current.postalCode || profile.deliveryPostalCode || "",
+        fullAddress: current.fullAddress || profile.deliveryAddress || "",
+        notes: current.notes || profile.deliveryNotes || "",
       })))
       .catch(() => undefined);
   }, [session]);
@@ -104,6 +114,18 @@ export function BuyerMarketplace() {
     setLocking(true);
     setError(null);
     try {
+      if (saveDelivery) {
+        await updateProfile({
+          deliveryRecipientName: delivery.recipientName,
+          deliveryPhoneNumber: delivery.recipientPhone,
+          deliveryProvince: delivery.province,
+          deliveryCity: delivery.city,
+          deliveryDistrict: delivery.district,
+          deliveryPostalCode: delivery.postalCode,
+          deliveryAddress: delivery.fullAddress,
+          deliveryNotes: delivery.notes,
+        });
+      }
       await lockEscrow(selected, delivery);
       setSelected(null);
       router.push("/order");
@@ -114,8 +136,8 @@ export function BuyerMarketplace() {
     }
   };
 
-  if (ready && (!session || session.user.role !== "BUYER")) {
-    return <div className="panel grid min-h-80 place-items-center p-8 text-center"><div><LockKeyhole className="mx-auto size-9 text-forest-700" /><h2 className="mt-5 text-2xl font-black">Sign in as a buyer.</h2><p className="mt-3 text-sm text-ink-600">Use a buyer account to purchase produce directly from farmers.</p><Link href="/auth" className="primary-button mt-6">Open account screen</Link></div></div>;
+  if (ready && !session) {
+    return <div className="panel grid min-h-80 place-items-center p-8 text-center"><div><LockKeyhole className="mx-auto size-9 text-forest-700" /><h2 className="mt-5 text-2xl font-black">Sign in to view the marketplace.</h2><Link href="/auth" className="primary-button mt-6">Open account screen</Link></div></div>;
   }
 
   return (
@@ -129,7 +151,7 @@ export function BuyerMarketplace() {
         <section>
           <div className="flex flex-col gap-4 rounded-[1.5rem] bg-[#dfe79a] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><span className="eyebrow">Available produce</span><h2 className="mt-2 text-2xl font-black tracking-[-.04em] text-forest-950">Know the quality before you buy.</h2><p className="mt-2 text-[10px] text-forest-950/55">Compare grade distribution, expected shelf life, and direct farm prices.</p></div><span className="pill w-fit bg-forest-950 text-white"><ShoppingBasket className="size-3 text-leaf-400" /> {listings.length} listing{listings.length === 1 ? "" : "s"}</span></div>
           {error && !selected && <p className="mt-4 rounded-xl bg-clay-100 p-3 text-[10px] font-bold text-clay-500">{error}</p>}
-          <div className="mt-4 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">{listings.map((listing) => <ListingCard key={listing.id} listing={listing} onBuy={() => { setSelected(listing); setError(null); }} orderActive={listing.id === state.selectedListingId && state.status !== "open"} />)}</div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">{listings.map((listing) => <ListingCard key={listing.id} listing={listing} onBuy={() => { setSelected(listing); setError(null); }} orderActive={listing.id === state.selectedListingId && state.status !== "open"} canBuy={session?.user.role === "BUYER"} />)}</div>
           {listings.length === 0 && <div className="panel mt-4 grid min-h-72 place-items-center text-center"><div><Leaf className="mx-auto size-8 text-ink-600/30" /><h3 className="mt-4 text-lg font-black">No open match yet.</h3><p className="mt-2 text-[10px] text-ink-600">New farmer listings will appear here automatically.</p></div></div>}
         </section>
       </div>
@@ -151,6 +173,7 @@ export function BuyerMarketplace() {
                   <label className="text-[9px] font-bold">Postal code<input maxLength={20} value={delivery.postalCode} onChange={(event) => setDelivery((current) => ({ ...current, postalCode: event.target.value }))} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] outline-none focus:ring-2 focus:ring-leaf-400" /></label>
                   <label className="text-[9px] font-bold sm:col-span-2">Full address<textarea required maxLength={1000} rows={3} value={delivery.fullAddress} onChange={(event) => setDelivery((current) => ({ ...current, fullAddress: event.target.value }))} className="mt-2 w-full rounded-xl bg-cream-100 p-3 text-[10px] outline-none focus:ring-2 focus:ring-leaf-400" /></label>
                   <label className="text-[9px] font-bold sm:col-span-2">Delivery notes<textarea maxLength={1000} rows={2} value={delivery.notes} onChange={(event) => setDelivery((current) => ({ ...current, notes: event.target.value }))} className="mt-2 w-full rounded-xl bg-cream-100 p-3 text-[10px] outline-none focus:ring-2 focus:ring-leaf-400" /></label>
+                  <label className="flex items-center gap-2 text-[9px] font-bold sm:col-span-2"><input type="checkbox" checked={saveDelivery} onChange={(event) => setSaveDelivery(event.target.checked)} className="size-4 accent-forest-700" />Save these details for future orders</label>
                 </div>
               </div>
               <div className="mt-4 flex gap-3 rounded-xl border border-forest-950/8 p-3"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-forest-700" /><div><p className="text-[9px] font-black">Payment protected</p><p className="mt-1 text-[8px] text-ink-600">The farmer is paid after delivery confirmation.</p></div></div>

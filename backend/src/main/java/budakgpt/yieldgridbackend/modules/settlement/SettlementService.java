@@ -12,6 +12,7 @@ import budakgpt.yieldgridbackend.modules.order.enums.EscrowStatus;
 import budakgpt.yieldgridbackend.modules.order.exception.InvalidOrderRequestException;
 import budakgpt.yieldgridbackend.modules.stellar.SecretCryptoService;
 import budakgpt.yieldgridbackend.modules.stellar.SidecarClient;
+import budakgpt.yieldgridbackend.modules.stellar.WalletProvisioningService;
 import budakgpt.yieldgridbackend.modules.ws.YieldGridEventPublisher;
 
 @Service
@@ -21,22 +22,23 @@ public class SettlementService {
     private final SidecarClient sidecarClient;
     private final SecretCryptoService secretCryptoService;
     private final YieldGridEventPublisher eventPublisher;
+    private final WalletProvisioningService walletProvisioningService;
 
     public SettlementService(
             SidecarClient sidecarClient,
             SecretCryptoService secretCryptoService,
-            YieldGridEventPublisher eventPublisher
+            YieldGridEventPublisher eventPublisher,
+            WalletProvisioningService walletProvisioningService
     ) {
         this.sidecarClient = sidecarClient;
         this.secretCryptoService = secretCryptoService;
         this.eventPublisher = eventPublisher;
+        this.walletProvisioningService = walletProvisioningService;
     }
 
     public void lockEscrow(Order order) {
-        UserEntity buyer = order.getBuyer();
-        UserEntity farmer = order.getFarmerSeller();
-        requireWallet(buyer, "buyer");
-        requireWallet(farmer, "farmer");
+        UserEntity buyer = walletProvisioningService.ensureProvisioned(order.getBuyer());
+        UserEntity farmer = walletProvisioningService.ensureProvisioned(order.getFarmerSeller());
         String txHash = sidecarClient.createEscrow(
                 order.getId(),
                 secretCryptoService.decrypt(buyer.getStellarSecretEnc()),
@@ -90,9 +92,4 @@ public class SettlementService {
         return 500;
     }
 
-    private void requireWallet(UserEntity user, String label) {
-        if (user == null || user.getStellarPublicKey() == null || user.getStellarSecretEnc() == null) {
-            throw new InvalidOrderRequestException("The " + label + " has no provisioned Stellar wallet");
-        }
-    }
 }

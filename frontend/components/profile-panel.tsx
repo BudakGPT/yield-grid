@@ -11,6 +11,14 @@ type ProfileForm = {
   fullName: string;
   phoneNumber: string;
   location: string;
+  deliveryRecipientName: string;
+  deliveryPhoneNumber: string;
+  deliveryProvince: string;
+  deliveryCity: string;
+  deliveryDistrict: string;
+  deliveryPostalCode: string;
+  deliveryAddress: string;
+  deliveryNotes: string;
   bio: string;
   avatarUrl: string;
 };
@@ -19,6 +27,14 @@ const emptyForm: ProfileForm = {
   fullName: "",
   phoneNumber: "",
   location: "",
+  deliveryRecipientName: "",
+  deliveryPhoneNumber: "",
+  deliveryProvince: "",
+  deliveryCity: "",
+  deliveryDistrict: "",
+  deliveryPostalCode: "",
+  deliveryAddress: "",
+  deliveryNotes: "",
   bio: "",
   avatarUrl: "",
 };
@@ -28,6 +44,14 @@ function toForm(profile: Profile): ProfileForm {
     fullName: profile.fullName,
     phoneNumber: profile.phoneNumber ?? "",
     location: profile.location ?? "",
+    deliveryRecipientName: profile.deliveryRecipientName ?? "",
+    deliveryPhoneNumber: profile.deliveryPhoneNumber ?? "",
+    deliveryProvince: profile.deliveryProvince ?? "",
+    deliveryCity: profile.deliveryCity ?? "",
+    deliveryDistrict: profile.deliveryDistrict ?? "",
+    deliveryPostalCode: profile.deliveryPostalCode ?? "",
+    deliveryAddress: profile.deliveryAddress ?? "",
+    deliveryNotes: profile.deliveryNotes ?? "",
     bio: profile.bio ?? "",
     avatarUrl: profile.avatarUrl ?? "",
   };
@@ -39,6 +63,7 @@ export function ProfilePanel({ compact = false }: { compact?: boolean }) {
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const accessToken = session?.accessToken;
@@ -94,6 +119,19 @@ export function ProfilePanel({ compact = false }: { compact?: boolean }) {
     }
   }
 
+  async function provisionWallet() {
+    setProvisioning(true);
+    setError("");
+    try {
+      const updated = await api.provisionMyWallet();
+      setProfile(updated);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "Could not set up payments");
+    } finally {
+      setProvisioning(false);
+    }
+  }
+
   if (!ready || (accessToken && loading)) {
     return <div className="grid min-h-72 place-items-center rounded-[1.5rem] bg-white"><LoaderCircle className="size-6 animate-spin text-forest-700" /></div>;
   }
@@ -107,11 +145,12 @@ export function ProfilePanel({ compact = false }: { compact?: boolean }) {
       <aside className="rounded-[1.5rem] bg-forest-950 p-5 text-white">
         <div className="flex items-center gap-4">
           <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-[#efd090] text-xl font-black text-forest-950" style={profile?.avatarUrl ? { backgroundImage: `url(${profile.avatarUrl})`, backgroundPosition: "center", backgroundSize: "cover", color: "transparent" } : undefined}>{initials}</span>
-          <div className="min-w-0"><p className="truncate text-lg font-black">{profile?.fullName ?? session.user.fullName}</p><p className="mt-1 text-[9px] uppercase tracking-[.16em] text-white/45">{session.user.role === "SELLER" ? "Farmer profile" : "Buyer profile"}</p></div>
+          <div className="min-w-0"><p className="truncate text-lg font-black">{profile?.fullName ?? session.user.fullName}</p><p className="mt-1 text-[9px] uppercase tracking-[.16em] text-white/45">{session.user.role === "SELLER" ? "Farmer profile" : session.user.role === "BUYER" ? "Buyer profile" : session.user.role === "ADMIN" ? "Administrator profile" : `${session.user.role.toLowerCase()} profile`}</p></div>
         </div>
         <div className="mt-6 space-y-2 text-[9px]">
           <div className="flex items-center gap-2 rounded-xl bg-white/6 p-3"><BadgeCheck className="size-4 text-leaf-400" />{profile?.emailVerified ? "Email verified" : "Email confirmation pending"}</div>
           <div className="flex items-center gap-2 rounded-xl bg-white/6 p-3"><WalletCards className="size-4 text-leaf-400" />{profile?.walletReady ? "Payments ready" : "Payment setup pending"}</div>
+          {profile && !profile.walletReady && <button type="button" onClick={provisionWallet} disabled={provisioning} className="min-h-10 w-full rounded-xl bg-leaf-400 px-3 text-[9px] font-black text-forest-950 disabled:opacity-60">{provisioning ? "Setting up payments..." : "Set up payments"}</button>}
           <div className="flex items-center gap-2 rounded-xl bg-white/6 p-3"><ShieldCheck className="size-4 text-leaf-400" />Email and account type cannot be changed here</div>
         </div>
       </aside>
@@ -122,6 +161,17 @@ export function ProfilePanel({ compact = false }: { compact?: boolean }) {
           <label className="text-[9px] font-bold text-ink-600">Full name<input required minLength={2} maxLength={100} value={form.fullName} onChange={(event) => change("fullName", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
           <label className="text-[9px] font-bold text-ink-600">Phone number<input type="tel" maxLength={32} value={form.phoneNumber} onChange={(event) => change("phoneNumber", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
           <label className="text-[9px] font-bold text-ink-600 sm:col-span-2">Location<span className="relative mt-2 block"><MapPin className="absolute left-3 top-3.5 size-3.5 text-ink-600/45" /><input maxLength={120} value={form.location} onChange={(event) => change("location", event.target.value)} className="min-h-11 w-full rounded-xl bg-cream-100 pl-9 pr-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></span></label>
+          {session.user.role === "BUYER" && <>
+            <div className="sm:col-span-2"><p className="eyebrow mt-2">Default delivery details</p><p className="mt-1 text-[9px] text-ink-600">These details will be filled automatically during checkout.</p></div>
+            <label className="text-[9px] font-bold text-ink-600">Recipient name<input maxLength={120} value={form.deliveryRecipientName} onChange={(event) => change("deliveryRecipientName", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
+            <label className="text-[9px] font-bold text-ink-600">Recipient phone<input type="tel" maxLength={40} value={form.deliveryPhoneNumber} onChange={(event) => change("deliveryPhoneNumber", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
+            <label className="text-[9px] font-bold text-ink-600">Province<input maxLength={120} value={form.deliveryProvince} onChange={(event) => change("deliveryProvince", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
+            <label className="text-[9px] font-bold text-ink-600">City<input maxLength={120} value={form.deliveryCity} onChange={(event) => change("deliveryCity", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
+            <label className="text-[9px] font-bold text-ink-600">District<input maxLength={120} value={form.deliveryDistrict} onChange={(event) => change("deliveryDistrict", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
+            <label className="text-[9px] font-bold text-ink-600">Postal code<input maxLength={20} value={form.deliveryPostalCode} onChange={(event) => change("deliveryPostalCode", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
+            <label className="text-[9px] font-bold text-ink-600 sm:col-span-2">Full address<textarea maxLength={1000} rows={3} value={form.deliveryAddress} onChange={(event) => change("deliveryAddress", event.target.value)} className="mt-2 w-full resize-none rounded-xl bg-cream-100 p-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
+            <label className="text-[9px] font-bold text-ink-600 sm:col-span-2">Default delivery notes<textarea maxLength={1000} rows={2} value={form.deliveryNotes} onChange={(event) => change("deliveryNotes", event.target.value)} className="mt-2 w-full resize-none rounded-xl bg-cream-100 p-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
+          </>}
           <label className="text-[9px] font-bold text-ink-600 sm:col-span-2">Bio<textarea maxLength={500} rows={4} value={form.bio} onChange={(event) => change("bio", event.target.value)} className="mt-2 w-full resize-none rounded-xl bg-cream-100 p-3 text-[10px] leading-5 text-forest-950 outline-none ring-leaf-400 focus:ring-2" /><span className="mt-1 block text-right font-mono text-[7px] text-ink-600/45">{form.bio.length}/500</span></label>
           <label className="text-[9px] font-bold text-ink-600 sm:col-span-2">Avatar URL<input type="url" maxLength={2048} value={form.avatarUrl} onChange={(event) => change("avatarUrl", event.target.value)} className="mt-2 min-h-11 w-full rounded-xl bg-cream-100 px-3 text-[10px] text-forest-950 outline-none ring-leaf-400 focus:ring-2" /></label>
           <label className="text-[9px] font-bold text-ink-600">Email<input readOnly value={profile?.email ?? session.user.email} className="mt-2 min-h-11 w-full cursor-not-allowed rounded-xl bg-forest-950/5 px-3 text-[10px] text-ink-600" /></label>
